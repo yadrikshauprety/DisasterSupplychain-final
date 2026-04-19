@@ -1,0 +1,2140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DisasterChain — Aid Supply Network</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Geist+Mono:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #0f0e0d;
+  --surface:  #171614;
+  --border:   #2a2723;
+  --border2:  #3a3530;
+  --text:     #e8e2d9;
+  --muted:    #6b6560;
+  --amber:    #e8832a;
+  --amber-dim:#7a3f0d;
+  --green:    #4a7c59;
+  --green-lt: #6aaf7e;
+  --red:      #c0392b;
+  --blue:     #3a7bd5;
+  --cream:    #d4cfc8;
+  --font-body: 'Geist Mono', 'Courier New', monospace;
+  --font-head: 'Syne', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  /* grain texture */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+}
+#root { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); }
+
+/* ── INPUTS ── */
+input, select, textarea {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 9px 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s;
+  border-radius: 2px;
+}
+input:focus, select:focus { border-color: var(--amber); }
+input::placeholder { color: var(--muted); }
+select option { background: var(--surface); }
+label { display: block; font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+
+/* ── BUTTONS ── */
+.btn {
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  padding: 10px 18px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.12s;
+  display: inline-flex; align-items: center; gap: 7px;
+  border-radius: 2px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--amber); border-color: var(--amber); color: #0f0e0d; font-weight: 700; }
+.btn-primary:hover { background: #f59335; border-color: #f59335; }
+.btn-primary:disabled { background: var(--amber-dim); border-color: var(--amber-dim); color: #5a3010; cursor: not-allowed; }
+.btn-ghost { background: transparent; border-color: var(--border2); color: var(--muted); }
+.btn-ghost:hover { border-color: var(--text); color: var(--text); }
+.btn-danger { background: transparent; border-color: var(--red); color: var(--red); }
+.btn-green { background: var(--green); border-color: var(--green); color: #fff; }
+.btn-green:hover { background: var(--green-lt); border-color: var(--green-lt); }
+.btn-full { width: 100%; justify-content: center; }
+
+/* ── TAGS / BADGES ── */
+.tag {
+  font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 3px 7px; border-radius: 1px; font-weight: 600;
+  display: inline-block;
+}
+.tag-amber  { background: #7a3f0d22; border: 1px solid #7a3f0d99; color: var(--amber); }
+.tag-green  { background: #4a7c5922; border: 1px solid #4a7c5999; color: var(--green-lt); }
+.tag-red    { background: #c0392b22; border: 1px solid #c0392b99; color: #e05a4e; }
+.tag-blue   { background: #3a7bd522; border: 1px solid #3a7bd599; color: #6fa8f5; }
+.tag-muted  { background: #2a272322; border: 1px solid var(--border2); color: var(--muted); }
+
+/* ── LAYOUT ── */
+.app-wrap { display: flex; height: 100vh; overflow: hidden; }
+.sidebar {
+  width: 220px; min-width: 220px; background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 0;
+  overflow-y: auto;
+}
+.main-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+.topbar {
+  height: 48px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 20px;
+  gap: 16px; background: var(--surface); flex-shrink: 0;
+}
+.content { padding: 24px; flex: 1; }
+
+/* ── SIDEBAR ── */
+.sidebar-logo {
+  padding: 18px 16px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo h1 {
+  font-family: var(--font-head);
+  font-size: 16px; font-weight: 800;
+  color: var(--text); letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+.sidebar-logo .sub { font-size: 9px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 3px; }
+
+.sidebar-section { padding: 14px 16px 8px; font-size: 9px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px; cursor: pointer; font-size: 12px;
+  color: var(--muted); transition: all 0.12s; border-left: 2px solid transparent;
+}
+.nav-item:hover { color: var(--text); background: rgba(232,130,42,0.04); }
+.nav-item.active { color: var(--text); border-left-color: var(--amber); background: rgba(232,130,42,0.06); }
+.nav-item .icon { font-size: 13px; width: 18px; text-align: center; }
+.nav-item .label { font-family: var(--font-body); font-weight: 500; }
+
+.sidebar-footer { margin-top: auto; padding: 14px 16px; border-top: 1px solid var(--border); }
+.user-chip {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 2px;
+}
+.avatar {
+  width: 28px; height: 28px; border-radius: 2px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; font-family: var(--font-head);
+  flex-shrink: 0;
+}
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-size: 11px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-role { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+/* ── TOPBAR ── */
+.chain-status { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); }
+.dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.dot-green { background: var(--green-lt); box-shadow: 0 0 5px var(--green-lt); }
+.dot-amber { background: var(--amber); }
+.dot-red   { background: var(--red); }
+.topbar-stat { font-size: 10px; color: var(--muted); padding: 4px 10px; border: 1px solid var(--border); border-radius: 2px; }
+.topbar-stat span { color: var(--text); font-weight: 500; margin-left: 4px; }
+
+/* ── CARDS / PANELS ── */
+.panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 2px; overflow: hidden;
+}
+.panel-header {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.panel-title { font-family: var(--font-head); font-size: 13px; font-weight: 700; color: var(--text); }
+.panel-sub { font-size: 10px; color: var(--muted); }
+.panel-body { padding: 16px; }
+
+/* ── TABLE ROWS ── */
+.data-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 11px 0; border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.data-row:last-child { border-bottom: none; }
+.data-row:hover { background: rgba(255,255,255,0.01); margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+
+/* ── GRID ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.grid-main { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
+@media (max-width: 900px) { .grid-main { grid-template-columns: 1fr; } .grid-3 { grid-template-columns: 1fr 1fr; } }
+
+/* ── STAT BLOCK ── */
+.stat-block { padding: 14px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 2px; }
+.stat-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.stat-value { font-family: var(--font-head); font-size: 26px; font-weight: 800; line-height: 1; }
+.stat-sub { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+/* ── BLOCKCHAIN VIEWER ── */
+.block-item {
+  border: 1px solid var(--border); border-radius: 2px; margin-bottom: 6px;
+  cursor: pointer; transition: border-color 0.12s; overflow: hidden;
+}
+.block-item:hover { border-color: var(--border2); }
+.block-item.open { border-color: var(--amber-dim); }
+.block-head {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: var(--bg);
+}
+.block-num {
+  font-family: var(--font-head); font-size: 11px; font-weight: 700;
+  color: var(--muted); width: 28px; flex-shrink: 0;
+}
+.block-type { font-size: 11px; font-weight: 600; color: var(--text); flex: 1; }
+.block-hash { font-size: 9px; color: var(--muted); font-family: var(--font-body); }
+.block-time { font-size: 9px; color: var(--muted); white-space: nowrap; }
+.block-body { padding: 10px 12px; background: var(--surface); border-top: 1px solid var(--border); }
+.block-prev { font-size: 9px; color: var(--muted); margin-bottom: 8px; font-family: var(--font-body); }
+.block-data { font-size: 10px; color: var(--green-lt); font-family: var(--font-body); white-space: pre-wrap; line-height: 1.6; }
+
+/* ── CHAIN LINE ── */
+.chain-list { max-height: 460px; overflow-y: auto; padding-right: 2px; }
+.chain-connector { width: 1px; height: 6px; background: var(--border); margin: 0 0 0 18px; }
+
+/* ── TIMELINE ── */
+.timeline-item { display: flex; gap: 12px; margin-bottom: 14px; }
+.timeline-dot-wrap { display: flex; flex-direction: column; align-items: center; gap: 0; }
+.tl-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid; flex-shrink: 0; margin-top: 3px; }
+.tl-line { width: 1px; flex: 1; background: var(--border); margin-top: 4px; min-height: 20px; }
+.tl-content { flex: 1; }
+.tl-loc { font-size: 12px; font-weight: 600; color: var(--text); }
+.tl-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.tl-tx { font-size: 9px; color: var(--border2); margin-top: 2px; font-family: var(--font-body); }
+
+/* ── PROGRESS BAR ── */
+.progress-wrap { height: 3px; background: var(--border); border-radius: 1px; margin-top: 8px; overflow: hidden; }
+.progress-bar { height: 100%; border-radius: 1px; transition: width 0.6s ease; }
+
+/* ── FORM GROUP ── */
+.form-group { margin-bottom: 14px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── TX CONFIRM ── */
+.tx-confirm { padding: 10px 12px; background: #4a7c5911; border: 1px solid #4a7c5966; border-radius: 2px; margin-top: 10px; }
+.tx-confirm-title { font-size: 10px; color: var(--green-lt); font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px; }
+.tx-hash { font-size: 9px; color: var(--muted); font-family: var(--font-body); word-break: break-all; }
+
+/* ── MINING INDICATOR ── */
+.mining-bar {
+  height: 2px; background: linear-gradient(90deg, transparent, var(--amber), transparent);
+  background-size: 200% 100%; animation: sweep 1.2s linear infinite;
+}
+@keyframes sweep { 0% { background-position: -100% 0; } 100% { background-position: 200% 0; } }
+
+/* ── EMPTY STATE ── */
+.empty { text-align: center; padding: 32px 20px; color: var(--muted); font-size: 11px; }
+.empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.4; }
+
+/* ── LOGIN PAGE ── */
+.login-wrap {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background-image: 
+    repeating-linear-gradient(0deg, transparent, transparent 39px, var(--border) 39px, var(--border) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, var(--border) 39px, var(--border) 40px);
+  background-size: 40px 40px;
+}
+.login-card { width: 100%; max-width: 400px; }
+.login-header { margin-bottom: 28px; }
+.login-wordmark { font-family: var(--font-head); font-size: 28px; font-weight: 800; color: var(--text); letter-spacing: -1px; }
+.login-tagline { font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 5px; }
+.login-panel { background: var(--surface); border: 1px solid var(--border); padding: 28px; border-radius: 2px; }
+.login-title { font-family: var(--font-head); font-size: 16px; font-weight: 700; margin-bottom: 20px; color: var(--text); }
+.demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 20px; }
+.demo-btn {
+  padding: 10px 12px; background: var(--bg); border: 1px solid var(--border);
+  cursor: pointer; text-align: left; color: var(--muted); transition: all 0.12s; border-radius: 2px;
+  font-family: var(--font-body);
+}
+.demo-btn:hover { border-color: var(--amber); color: var(--text); }
+.demo-btn .role-name { font-size: 11px; font-weight: 600; display: block; margin-bottom: 2px; }
+.demo-btn .role-email { font-size: 9px; }
+.error-msg { font-size: 11px; color: #e05a4e; padding: 8px 12px; background: #c0392b11; border: 1px solid #c0392b44; border-radius: 2px; margin-bottom: 12px; }
+
+/* ── NOTIFICATION ── */
+.notif { position: fixed; bottom: 20px; right: 20px; background: var(--surface); border: 1px solid var(--border); padding: 12px 16px; border-radius: 2px; font-size: 12px; z-index: 999; max-width: 320px; animation: slideup 0.2s ease; border-left: 3px solid var(--green-lt); }
+@keyframes slideup { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── DIVIDER ── */
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+
+/* ── MISC ── */
+.mono { font-family: var(--font-body); }
+.text-amber { color: var(--amber); }
+.text-green { color: var(--green-lt); }
+.text-muted { color: var(--muted); }
+.text-sm { font-size: 11px; }
+.text-xs { font-size: 10px; }
+.text-head { font-family: var(--font-head); }
+.fw-700 { font-weight: 700; }
+.mt-4 { margin-top: 4px; }
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.flex { display: flex; }
+.flex-center { display: flex; align-items: center; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.gap-20 { gap: 20px; }
+.w-full { width: 100%; }
+.ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ═══════════════════════════════════════════════════
+// BLOCKCHAIN ENGINE
+// ═══════════════════════════════════════════════════
+class Block {
+  constructor(index, ts, data, prev = "0000000000000000") {
+    this.index = index;
+    this.timestamp = ts;
+    this.data = data;
+    this.previousHash = prev;
+    this.nonce = 0;
+    this.hash = this.computeHash();
+  }
+  computeHash() {
+    const s = `${this.index}${this.previousHash}${this.timestamp}${JSON.stringify(this.data)}${this.nonce}`;
+    let a = 2166136261, b = 0;
+    for (let i = 0; i < s.length; i++) {
+      const c = s.charCodeAt(i);
+      a ^= c; a = (a * 16777619) >>> 0;
+      b = ((b << 5) - b + c) >>> 0;
+    }
+    const p = (n) => (n >>> 0).toString(16).padStart(8,'0');
+    return `${p(a)}${p(b)}${p((a^b)>>>0)}${p((a*31+b)>>>0)}`;
+  }
+  mine(d = 2) {
+    const t = '0'.repeat(d);
+    while (!this.hash.startsWith(t) && this.nonce < 99999) {
+      this.nonce++;
+      this.hash = this.computeHash();
+    }
+  }
+}
+
+class Blockchain {
+  constructor() {
+    this.chain = [];
+    this.difficulty = 2;
+    this._addGenesis();
+  }
+  _addGenesis() {
+    const b = new Block(0, "2024-01-01T00:00:00Z", {
+      type: "GENESIS",
+      message: "DisasterChain Network — Transparent Humanitarian Aid",
+      chainId: "DC-TESTNET-01"
+    });
+    this.chain.push(b);
+  }
+  latest() { return this.chain[this.chain.length - 1]; }
+  add(data) {
+    const b = new Block(this.chain.length, new Date().toISOString(), data, this.latest().hash);
+    b.mine(this.difficulty);
+    this.chain.push(b);
+    return b;
+  }
+  valid() {
+    for (let i = 1; i < this.chain.length; i++) {
+      if (this.chain[i].previousHash !== this.chain[i-1].hash) return false;
+    }
+    return true;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// DATABASE
+// ═══════════════════════════════════════════════════
+const DB = {
+  users: [
+    { id:"donor1",     name:"Arjun Mehta",         email:"arjun@donor.com",      pw:"donor123",  role:"donor",     wallet:"0xDC4172756E4D6568746100000000000000", eth:100.0, avatar:"AM" },
+    { id:"ngo1",       name:"Relief India",         email:"ngo@relief.org",       pw:"ngo123",    role:"ngo",       wallet:"0xDC52656C696566496E6469614E474F0000", eth:0,     avatar:"RI" },
+    { id:"logistics1", name:"SwiftMove Logistics",  email:"swift@logistics.com",  pw:"swift123",  role:"logistics", wallet:"0xDC537769667446726569676874000000000", eth:0,     avatar:"SM" },
+    { id:"recipient1", name:"Priya Sharma",         email:"priya@relief.org",     pw:"relief123", role:"recipient", wallet:"0xDC50726979615368617272610000000000", eth:0,     avatar:"PS" },
+  ],
+  donations: [], shipments: [], scans: [], _id: 1000,
+  uid() { return ++this._id; },
+  user(email, pw) { return this.users.find(u => u.email===email && u.pw===pw); },
+  byId(id) { return this.users.find(u => u.id===id); },
+};
+
+// Global blockchain
+const bc = new Blockchain();
+
+// Seed data
+(function seed() {
+  const don = { type:"DONATION", donorId:"donor1", donorName:"Arjun Mehta", donorWallet: DB.byId("donor1").wallet, amount:5, currency:"ETH", disaster:"Flood Relief", description:"Initial seed donation for Kerala floods", ngoWallet: DB.byId("ngo1").wallet, status:"CONFIRMED" };
+  const db = bc.add(don);
+  DB.donations.push({ ...don, id:`DON${DB.uid()}`, createdAt: new Date(Date.now()-3600000).toISOString(), blockHash: db.hash, blockIndex: db.index });
+  DB.byId("donor1").eth -= 5;
+
+  const s1 = { type:"SHIPMENT_CREATED", ngoId:"ngo1", ngoName:"Relief India", ngoWallet: DB.byId("ngo1").wallet, recipientArea:"Ernakulam District, Kerala", items:"50 food kits · 30 blankets · ORS packets", description:"Kerala Flood Relief — Batch 01", status:"CREATED", logisticsId:"logistics1" };
+  const s1b = bc.add(s1);
+  DB.shipments.push({ ...s1, id:`SHIP${DB.uid()}`, createdAt: new Date(Date.now()-1800000).toISOString(), blockHash: s1b.hash, blockIndex: s1b.index });
+
+  const s2 = { type:"SHIPMENT_CREATED", ngoId:"ngo1", ngoName:"Relief India", ngoWallet: DB.byId("ngo1").wallet, recipientArea:"Wayanad, Kerala", items:"Medical supplies · 20 tents · drinking water cans", description:"Wayanad Landslide Emergency — Batch 01", status:"CREATED", logisticsId:"logistics1" };
+  const s2b = bc.add(s2);
+  DB.shipments.push({ ...s2, id:`SHIP${DB.uid()}`, createdAt: new Date(Date.now()-900000).toISOString(), blockHash: s2b.hash, blockIndex: s2b.index });
+})();
+
+// ═══════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════
+const fmtHash = h => h ? `${h.slice(0,8)}…${h.slice(-6)}` : "—";
+const fmtTime = iso => {
+  try { return new Date(iso).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}); }
+  catch { return iso; }
+};
+const fmtTimeAgo = iso => {
+  const s = Math.floor((Date.now()-new Date(iso))/1000);
+  if (s<60) return `${s}s ago`; if (s<3600) return `${Math.floor(s/60)}m ago`;
+  if (s<86400) return `${Math.floor(s/3600)}h ago`; return `${Math.floor(s/86400)}d ago`;
+};
+
+const ROLE_AVATAR_COLOR = { donor:"#e8832a", ngo:"#4a7c59", logistics:"#3a7bd5", recipient:"#9b6b9e" };
+const STATUS_DOT = { CREATED:"dot-muted", IN_TRANSIT:"dot-amber", AT_WAREHOUSE:"dot-amber", OUT_FOR_DELIVERY:"dot-blue", DELIVERED:"dot-green", CUSTOMS_CLEARED:"dot-blue" };
+const STATUS_TAG = { CREATED:"tag-muted", IN_TRANSIT:"tag-amber", AT_WAREHOUSE:"tag-amber", OUT_FOR_DELIVERY:"tag-blue", DELIVERED:"tag-green", CUSTOMS_CLEARED:"tag-blue" };
+const STATUS_PROG = { CREATED:8, IN_TRANSIT:55, AT_WAREHOUSE:35, CUSTOMS_CLEARED:60, OUT_FOR_DELIVERY:82, DELIVERED:100 };
+const STATUS_COL  = { CREATED:"#6b6560", IN_TRANSIT:"#e8832a", AT_WAREHOUSE:"#e8832a", CUSTOMS_CLEARED:"#3a7bd5", OUT_FOR_DELIVERY:"#3a7bd5", DELIVERED:"#4a7c59" };
+const TYPE_COLOR  = { GENESIS:"#6b6560", DONATION:"#e8832a", SHIPMENT_CREATED:"#4a7c59", SCAN:"#3a7bd5" };
+
+// ═══════════════════════════════════════════════════
+// SHARED COMPONENTS
+// ═══════════════════════════════════════════════════
+function BlockItem({ block }) {
+  const [open, setOpen] = useState(false);
+  const tc = TYPE_COLOR[block.data.type] || "#6b6560";
+  return (
+    <div className={`block-item ${open?"open":""}`} onClick={()=>setOpen(!open)}>
+      <div className="block-head">
+        <div className="block-num" style={{color:tc}}>#{block.index}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div className="block-type">{block.data.type || "TX"}</div>
+          <div className="block-hash">{fmtHash(block.hash)}</div>
+        </div>
+        <div className="block-time">{fmtTimeAgo(block.timestamp)}</div>
+      </div>
+      {open && (
+        <div className="block-body">
+          <div className="block-prev">← prev: {fmtHash(block.previousHash)}</div>
+          <pre className="block-data">{JSON.stringify(block.data,null,2)}</pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChainPanel({ blocks }) {
+  return (
+    <div className="panel" style={{height:'100%'}}>
+      <div className="panel-header">
+        <span className="panel-title">Blockchain Ledger</span>
+        <div className="flex-center gap-8">
+          <div className={`dot ${bc.valid()?"dot-green":"dot-red"}`}/>
+          <span className="text-xs text-muted">{blocks.length} blocks · {bc.valid()?"valid":"TAMPERED"}</span>
+        </div>
+      </div>
+      <div className="panel-body" style={{padding:'12px'}}>
+        <div className="chain-list">
+          {[...blocks].reverse().map(b => <BlockItem key={b.index} block={b}/>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatBlock({ label, value, sub, color }) {
+  return (
+    <div className="stat-block">
+      <div className="stat-label">{label}</div>
+      <div className="stat-value" style={{color: color||"var(--text)"}}>{value}</div>
+      {sub && <div className="stat-sub">{sub}</div>}
+    </div>
+  );
+}
+
+function FormGroup({ label, children }) {
+  return <div className="form-group"><label>{label}</label>{children}</div>;
+}
+
+function TxConfirm({ hash }) {
+  return hash ? (
+    <div className="tx-confirm">
+      <div className="tx-confirm-title">✓ Transaction confirmed on chain</div>
+      <div className="tx-hash">{hash}</div>
+    </div>
+  ) : null;
+}
+
+function Notif({ msg, onDone }) {
+  useEffect(()=>{ const t=setTimeout(onDone,3500); return ()=>clearTimeout(t); },[]);
+  return <div className="notif">✓ {msg}</div>;
+}
+
+// ═══════════════════════════════════════════════════
+// DONOR DASHBOARD
+// ═══════════════════════════════════════════════════
+function DonorDash({ user, tick, onTick }) {
+  const [amount, setAmount]   = useState("");
+  const [desc, setDesc]       = useState("");
+  const [disaster, setDisaster] = useState("Flood Relief");
+  const [mining, setMining]   = useState(false);
+  const [txHash, setTxHash]   = useState("");
+  const [notif, setNotif]     = useState("");
+  const [donations, setDons]  = useState([...DB.donations.filter(d=>d.donorId===user.id)]);
+  const [blocks, setBlocks]   = useState([...bc.chain]);
+
+  useEffect(()=>{
+    setDons([...DB.donations.filter(d=>d.donorId===user.id)]);
+    setBlocks([...bc.chain]);
+  },[tick]);
+
+  const submit = async () => {
+    const amt = parseFloat(amount);
+    if (!amount || isNaN(amt) || amt<=0) return;
+    const u = DB.byId(user.id);
+    if (amt > u.eth) { alert("Insufficient balance"); return; }
+    setMining(true);
+    await new Promise(r=>setTimeout(r,1600));
+    const data = { type:"DONATION", donorId:user.id, donorName:user.name, donorWallet:user.wallet, amount:amt, currency:"ETH", disaster, description:desc||"Disaster relief contribution", ngoWallet:DB.byId("ngo1").wallet, status:"CONFIRMED" };
+    const blk = bc.add(data);
+    DB.donations.push({ ...data, id:`DON${DB.uid()}`, createdAt:new Date().toISOString(), blockHash:blk.hash, blockIndex:blk.index });
+    u.eth = parseFloat((u.eth - amt).toFixed(4));
+    user.eth = u.eth;
+    setTxHash(blk.hash);
+    setAmount(""); setDesc("");
+    setDons([...DB.donations.filter(d=>d.donorId===user.id)]);
+    setBlocks([...bc.chain]);
+    setMining(false);
+    setNotif(`${amt} ETH donated for ${disaster}`);
+    onTick();
+  };
+
+  const dbUser = DB.byId(user.id);
+
+  return (
+    <div>
+      {notif && <Notif msg={notif} onDone={()=>setNotif("")}/>}
+      <div className="grid-3" style={{marginBottom:20}}>
+        <StatBlock label="Available Balance" value={`${dbUser.eth} ETH`} color="var(--amber)" sub="DisasterChain Testnet"/>
+        <StatBlock label="Total Donated" value={`${donations.reduce((s,d)=>s+d.amount,0).toFixed(2)} ETH`} color="var(--text)"/>
+        <StatBlock label="Transactions" value={donations.length} sub="on-chain records"/>
+      </div>
+
+      <div className="grid-main">
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          {/* Donate form */}
+          <div className="panel">
+            {mining && <div className="mining-bar"/>}
+            <div className="panel-header">
+              <span className="panel-title">New Donation</span>
+              <span className="text-xs text-muted">funds go directly to NGO wallet</span>
+            </div>
+            <div className="panel-body">
+              <div className="form-row">
+                <FormGroup label="Disaster Category">
+                  <select value={disaster} onChange={e=>setDisaster(e.target.value)}>
+                    {["Flood Relief","Earthquake Response","Cyclone Aid","Drought Support","Landslide Relief","Fire Disaster","Pandemic Relief","Tsunami Response"].map(d=><option key={d}>{d}</option>)}
+                  </select>
+                </FormGroup>
+                <FormGroup label="Amount (ETH)">
+                  <input type="number" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0.00" min="0.01" step="0.01" style={{fontSize:18,fontWeight:700,color:'var(--amber)'}}/>
+                </FormGroup>
+              </div>
+              <FormGroup label="Note (optional)">
+                <input value={desc} onChange={e=>setDesc(e.target.value)} placeholder="e.g. For the families in Ernakulam district"/>
+              </FormGroup>
+              <div style={{paddingTop:4}}>
+                <button className="btn btn-primary btn-full" onClick={submit} disabled={mining}>
+                  {mining ? "⛏  Mining block…" : "→  Submit Donation"}
+                </button>
+              </div>
+              <TxConfirm hash={txHash}/>
+            </div>
+          </div>
+
+          {/* Donation history */}
+          <div className="panel">
+            <div className="panel-header">
+              <span className="panel-title">Donation History</span>
+              <span className="tag tag-muted">{donations.length} records</span>
+            </div>
+            <div className="panel-body" style={{padding:'0 16px'}}>
+              {donations.length === 0
+                ? <div className="empty"><div className="empty-icon">◎</div>No donations yet</div>
+                : [...donations].reverse().map(d=>(
+                  <div key={d.id} className="data-row">
+                    <div style={{width:32,paddingTop:2}}>
+                      <div className="dot dot-green" style={{marginTop:4}}/>
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div className="flex-between">
+                        <span className="text-head fw-700" style={{fontSize:13}}>{d.disaster}</span>
+                        <span className="text-head fw-700 text-amber" style={{fontSize:15}}>{d.amount} ETH</span>
+                      </div>
+                      {d.description && <div className="text-xs text-muted mt-4" style={{fontStyle:'italic'}}>"{d.description}"</div>}
+                      <div className="flex gap-8 mt-4">
+                        <span className="text-xs text-muted">{fmtTime(d.createdAt)}</span>
+                        <span className="text-xs" style={{color:'var(--border2)'}}>·</span>
+                        <span className="text-xs text-muted mono">block #{d.blockIndex}</span>
+                        <span className="text-xs" style={{color:'var(--border2)'}}>·</span>
+                        <span className="text-xs text-muted mono">{fmtHash(d.blockHash)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+
+        {/* Chain */}
+        <div style={{minHeight:400}}>
+          <ChainPanel blocks={blocks}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// NGO DASHBOARD
+// ═══════════════════════════════════════════════════
+function NGODash({ user, tick, onTick }) {
+  const [desc, setDesc]     = useState("");
+  const [items, setItems]   = useState("");
+  const [area, setArea]     = useState("");
+  const [priority, setPriority] = useState("High");
+  const [loading, setLoading] = useState(false);
+  const [notif, setNotif]   = useState("");
+  const [shipments, setShips] = useState([...DB.shipments.filter(s=>s.ngoId===user.id)]);
+  const [blocks, setBlocks] = useState([...bc.chain]);
+
+  useEffect(()=>{
+    setShips([...DB.shipments.filter(s=>s.ngoId===user.id)]);
+    setBlocks([...bc.chain]);
+  },[tick]);
+
+  const create = async () => {
+    if (!desc||!items) return;
+    setLoading(true);
+    await new Promise(r=>setTimeout(r,1300));
+    const data = { type:"SHIPMENT_CREATED", ngoId:user.id, ngoName:user.name, ngoWallet:user.wallet, recipientArea:area||"General Relief", items, description:desc, priority, status:"CREATED", logisticsId:"logistics1" };
+    const blk = bc.add(data);
+    DB.shipments.push({ ...data, id:`SHIP${DB.uid()}`, createdAt:new Date().toISOString(), blockHash:blk.hash, blockIndex:blk.index });
+    setShips([...DB.shipments.filter(s=>s.ngoId===user.id)]);
+    setBlocks([...bc.chain]);
+    setDesc(""); setItems(""); setArea("");
+    setLoading(false);
+    setNotif("Shipment created and recorded on chain");
+    onTick();
+  };
+
+  const totalReceived = DB.donations.reduce((s,d)=>s+d.amount,0);
+
+  return (
+    <div>
+      {notif && <Notif msg={notif} onDone={()=>setNotif("")}/>}
+      <div className="grid-3" style={{marginBottom:20}}>
+        <StatBlock label="Total Aid Received" value={`${totalReceived.toFixed(2)} ETH`} color="var(--green-lt)"/>
+        <StatBlock label="Active Shipments" value={shipments.filter(s=>s.status!=="DELIVERED").length}/>
+        <StatBlock label="Registered Recipients" value={Object.keys(KYC_REGISTRY).length} color="#9b6b9e"/>
+      </div>
+
+      <div className="grid-main">
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          {/* Create shipment */}
+          <div className="panel">
+            {loading && <div className="mining-bar"/>}
+            <div className="panel-header">
+              <span className="panel-title">Create Shipment</span>
+              <span className="text-xs text-muted">recorded on blockchain</span>
+            </div>
+            <div className="panel-body">
+              <FormGroup label="Description">
+                <input value={desc} onChange={e=>setDesc(e.target.value)} placeholder="e.g. Kerala Flood Relief Package — Batch 02"/>
+              </FormGroup>
+              <FormGroup label="Contents / Items">
+                <input value={items} onChange={e=>setItems(e.target.value)} placeholder="e.g. 50 food kits · 30 blankets · medicines"/>
+              </FormGroup>
+              <div className="form-row">
+                <FormGroup label="Destination Area">
+                  <input value={area} onChange={e=>setArea(e.target.value)} placeholder="e.g. Ernakulam District"/>
+                </FormGroup>
+                <FormGroup label="Priority">
+                  <select value={priority} onChange={e=>setPriority(e.target.value)}>
+                    {["Critical","High","Medium","Low"].map(p=><option key={p}>{p}</option>)}
+                  </select>
+                </FormGroup>
+              </div>
+              <button className="btn btn-green btn-full" onClick={create} disabled={loading}>
+                {loading ? "⛏  Recording on chain…" : "→  Create Shipment"}
+              </button>
+            </div>
+          </div>
+
+          {/* Donations received */}
+          <div className="panel">
+            <div className="panel-header">
+              <span className="panel-title">Incoming Donations</span>
+              <span className="tag tag-amber">{DB.donations.length} total</span>
+            </div>
+            <div className="panel-body" style={{padding:'0 16px'}}>
+              {DB.donations.length===0
+                ? <div className="empty"><div className="empty-icon">◎</div>No donations yet</div>
+                : [...DB.donations].reverse().map(d=>(
+                  <div key={d.id} className="data-row">
+                    <div style={{paddingTop:3}}><div className="dot dot-green"/></div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div className="flex-between">
+                        <span style={{fontSize:13,fontWeight:600}}>{d.donorName}</span>
+                        <span className="text-amber fw-700 text-head" style={{fontSize:14}}>{d.amount} ETH</span>
+                      </div>
+                      <div className="text-xs text-muted mt-4">{d.disaster} · {fmtTime(d.createdAt)}</div>
+                      <div className="text-xs text-muted mono mt-4">{fmtHash(d.blockHash)}</div>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          {/* Shipments list */}
+          <div className="panel">
+            <div className="panel-header">
+              <span className="panel-title">All Shipments</span>
+              <span className="tag tag-muted">{shipments.length}</span>
+            </div>
+            <div className="panel-body" style={{padding:'0 16px'}}>
+              {shipments.length===0
+                ? <div className="empty"><div className="empty-icon">◎</div>No shipments yet</div>
+                : [...shipments].reverse().map(s=>(
+                  <div key={s.id} className="data-row" style={{flexDirection:'column',gap:8}}>
+                    <div className="flex-between w-full">
+                      <span className="mono" style={{fontSize:10,color:'var(--muted)'}}>{s.id}</span>
+                      <span className={`tag ${STATUS_TAG[s.status]||'tag-muted'}`}>{s.status}</span>
+                    </div>
+                    <div style={{fontSize:13,fontWeight:600}}>{s.description}</div>
+                    <div className="text-xs text-muted">{s.items}</div>
+                    <div className="text-xs text-muted">📍 {s.recipientArea}</div>
+                    <div className="progress-wrap">
+                      <div className="progress-bar" style={{width:`${STATUS_PROG[s.status]||8}%`,background:STATUS_COL[s.status]||'var(--border2)'}}/>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+          <ChainPanel blocks={blocks}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// LOGISTICS DASHBOARD
+// ═══════════════════════════════════════════════════
+function LogisticsDash({ user, tick, onTick }) {
+  const [selShip, setSelShip] = useState("");
+  const [loc, setLoc]         = useState("");
+  const [status, setStatus]   = useState("IN_TRANSIT");
+  const [loading, setLoading] = useState(false);
+  const [notif, setNotif]     = useState("");
+  const [scans, setScans]     = useState([...DB.scans]);
+  const [ships, setShips]     = useState([...DB.shipments]);
+  const [blocks, setBlocks]   = useState([...bc.chain]);
+
+  useEffect(()=>{
+    setScans([...DB.scans]);
+    setShips([...DB.shipments]);
+    setBlocks([...bc.chain]);
+  },[tick]);
+
+  const scan = async () => {
+    if (!selShip||!loc) return;
+    setLoading(true);
+    await new Promise(r=>setTimeout(r,1300));
+    const data = { type:"SCAN", logisticsId:user.id, logisticsName:user.name, logisticsWallet:user.wallet, shipmentId:selShip, location:loc, status, gpsCoords:`${(8+Math.random()*20).toFixed(4)}°N, ${(72+Math.random()*15).toFixed(4)}°E` };
+    const blk = bc.add(data);
+    const sc = { ...data, id:`SCAN${DB.uid()}`, timestamp:new Date().toISOString(), blockHash:blk.hash, blockIndex:blk.index };
+    DB.scans.push(sc);
+    const ship = DB.shipments.find(s=>s.id===selShip);
+    if (ship) ship.status = status;
+    setScans([...DB.scans]);
+    setShips([...DB.shipments]);
+    setBlocks([...bc.chain]);
+    setLoc("");
+    setLoading(false);
+    setNotif(`Scan recorded — ${selShip} now ${status}`);
+    onTick();
+  };
+
+  return (
+    <div>
+      {notif && <Notif msg={notif} onDone={()=>setNotif("")}/>}
+      <div className="grid-3" style={{marginBottom:20}}>
+        <StatBlock label="Total Scans" value={scans.length} sub="blockchain records"/>
+        <StatBlock label="In Transit" value={ships.filter(s=>s.status==="IN_TRANSIT"||s.status==="OUT_FOR_DELIVERY").length} color="var(--amber)"/>
+        <StatBlock label="Delivered" value={ships.filter(s=>s.status==="DELIVERED").length} color="var(--green-lt)"/>
+      </div>
+
+      <div className="grid-main">
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          {/* Scan form */}
+          <div className="panel">
+            {loading && <div className="mining-bar"/>}
+            <div className="panel-header">
+              <span className="panel-title">Record Package Scan</span>
+              <span className="text-xs text-muted">each scan is a blockchain transaction</span>
+            </div>
+            <div className="panel-body">
+              <FormGroup label="Shipment">
+                <select value={selShip} onChange={e=>setSelShip(e.target.value)}>
+                  <option value="">{ships.length===0?"No shipments available — NGO must create first":"— Select shipment —"}</option>
+                  {ships.map(s=><option key={s.id} value={s.id}>{s.id} · {(s.description||"").slice(0,35)}…</option>)}
+                </select>
+              </FormGroup>
+              <div className="form-row">
+                <FormGroup label="Current Location">
+                  <input value={loc} onChange={e=>setLoc(e.target.value)} placeholder="e.g. Mumbai Sorting Hub"/>
+                </FormGroup>
+                <FormGroup label="Status Update">
+                  <select value={status} onChange={e=>setStatus(e.target.value)}>
+                    <option value="IN_TRANSIT">In Transit</option>
+                    <option value="AT_WAREHOUSE">At Warehouse</option>
+                    <option value="CUSTOMS_CLEARED">Customs Cleared</option>
+                    <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
+                    <option value="DELIVERED">Delivered</option>
+                  </select>
+                </FormGroup>
+              </div>
+              <button className="btn btn-primary btn-full" onClick={scan} disabled={loading||!selShip||!loc}>
+                {loading ? "⛏  Recording on chain…" : "→  Record Scan"}
+              </button>
+            </div>
+          </div>
+
+          {/* Shipment tracker */}
+          <div className="panel">
+            <div className="panel-header">
+              <span className="panel-title">All Shipments</span>
+            </div>
+            <div className="panel-body" style={{padding:'0 16px'}}>
+              {ships.length===0
+                ? <div className="empty"><div className="empty-icon">◎</div>No shipments yet</div>
+                : ships.map(s=>{
+                  const shipScans = scans.filter(sc=>sc.shipmentId===s.id);
+                  return (
+                    <div key={s.id} className="data-row" style={{flexDirection:'column',gap:8}}>
+                      <div className="flex-between w-full">
+                        <span className="mono" style={{fontSize:10,color:'var(--muted)'}}>{s.id}</span>
+                        <span className={`tag ${STATUS_TAG[s.status]||'tag-muted'}`}>{s.status}</span>
+                      </div>
+                      <div style={{fontSize:13,fontWeight:600}}>{s.description}</div>
+                      <div className="text-xs text-muted">📍 {s.recipientArea}</div>
+                      <div className="progress-wrap">
+                        <div className="progress-bar" style={{width:`${STATUS_PROG[s.status]||8}%`,background:STATUS_COL[s.status]}}/>
+                      </div>
+                      {shipScans.length>0 && <div className="text-xs text-muted">{shipScans.length} checkpoint{shipScans.length>1?"s":""} recorded</div>}
+                    </div>
+                  );
+                })
+              }
+            </div>
+          </div>
+        </div>
+
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          {/* Scan history */}
+          <div className="panel">
+            <div className="panel-header">
+              <span className="panel-title">Scan History</span>
+              <span className="tag tag-muted">{scans.length} records</span>
+            </div>
+            <div className="panel-body" style={{padding:'0 16px',maxHeight:260,overflowY:'auto'}}>
+              {scans.length===0
+                ? <div className="empty"><div className="empty-icon">◎</div>No scans yet</div>
+                : [...scans].reverse().map(s=>(
+                  <div key={s.id} className="data-row">
+                    <div style={{paddingTop:3}}><div className={`dot ${STATUS_DOT[s.status]||''}`} style={{background:STATUS_COL[s.status]}}/></div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div className="flex-between">
+                        <span style={{fontSize:12,fontWeight:600}}>📍 {s.location}</span>
+                        <span className={`tag ${STATUS_TAG[s.status]||'tag-muted'}`} style={{fontSize:9}}>{s.status}</span>
+                      </div>
+                      <div className="text-xs text-muted mt-4">{s.shipmentId} · {fmtTime(s.timestamp)}</div>
+                      <div className="text-xs text-muted mono mt-4">{s.gpsCoords}</div>
+                      <div className="text-xs" style={{color:'var(--border2)',marginTop:2}}>block #{s.blockIndex} · {fmtHash(s.blockHash)}</div>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+          <ChainPanel blocks={blocks}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// KYC REGISTRY (in-memory, simulates Aadhaar verification)
+// ═══════════════════════════════════════════════════
+const KYC_REGISTRY = {}; // userId -> record
+
+function generateUID() {
+  // Simulate a 12-digit Aadhaar-style UID
+  return Array.from({length:12}, ()=>Math.floor(Math.random()*10)).join('').replace(/(\d{4})(\d{4})(\d{4})/,'$1 $2 $3');
+}
+
+// ═══════════════════════════════════════════════════
+// RECIPIENT — KYC REGISTRATION
+// ═══════════════════════════════════════════════════
+function RecipientRegister({ user, onRegistered }) {
+  const [step, setStep]           = useState(1); // 1=personal, 2=address, 3=documents, 4=review, 5=done
+  const [notif, setNotif]         = useState("");
+
+  // Step 1 — Personal
+  const [fullName, setFullName]   = useState(user.name || "");
+  const [dob, setDob]             = useState("");
+  const [gender, setGender]       = useState("Female");
+  const [phone, setPhone]         = useState("");
+  const [email, setEmail]         = useState(user.email || "");
+  const [fatherName, setFather]   = useState("");
+
+  // Step 2 — Address
+  const [street, setStreet]       = useState("");
+  const [village, setVillage]     = useState("");
+  const [district, setDistrict]   = useState("");
+  const [state, setState]         = useState("Kerala");
+  const [pincode, setPincode]     = useState("");
+
+  // Step 3 — Documents
+  const [aadhaarNum, setAadhaar]  = useState("");
+  const [aadhaarFile, setAadhaarFile] = useState(null);
+  const [aadhaarPreview, setAadhaarPreview] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [rationCard, setRation]   = useState("");
+  const [bankAccount, setBank]    = useState("");
+  const [ifsc, setIfsc]           = useState("");
+  const [loading, setLoading]     = useState(false);
+
+  const handleFileChange = (e, setFile, setPreview) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    setFile(f);
+    const reader = new FileReader();
+    reader.onload = ev => setPreview(ev.target.result);
+    reader.readAsDataURL(f);
+  };
+
+  const submit = async () => {
+    setLoading(true);
+    await new Promise(r=>setTimeout(r,2000));
+    const uid = generateUID();
+    const record = {
+      uid, fullName, dob, gender, phone, email, fatherName,
+      address: { street, village, district, state, pincode },
+      aadhaarNum: aadhaarNum.replace(/\s/g,'').replace(/(\d{4})(\d{4})(\d{4})/,'$1 $2 $3'),
+      rationCard, bankAccount, ifsc,
+      aadhaarPreview, photoPreview,
+      registeredAt: new Date().toISOString(),
+      status: "VERIFIED",
+      userId: user.id,
+    };
+    KYC_REGISTRY[user.id] = record;
+    setLoading(false);
+    setStep(5);
+    onRegistered(record);
+  };
+
+  const STATES = ["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal"];
+
+  const stepLabels = ["Personal Details","Address","Documents & Bank","Review","Done"];
+
+  // Progress bar
+  const ProgressBar = () => (
+    <div style={{marginBottom:24}}>
+      <div style={{display:'flex',gap:0,marginBottom:8}}>
+        {stepLabels.map((label,i)=>{
+          const n = i+1;
+          const done = step > n;
+          const active = step === n;
+          return (
+            <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
+              <div style={{width:'100%',display:'flex',alignItems:'center'}}>
+                {i>0 && <div style={{flex:1,height:1,background:done||active?'var(--amber)':'var(--border)'}}/>}
+                <div style={{
+                  width:22,height:22,borderRadius:'50%',flexShrink:0,
+                  background:done?'var(--green)':active?'var(--amber)':'var(--border)',
+                  color:done||active?'#fff':'var(--muted)',
+                  display:'flex',alignItems:'center',justifyContent:'center',
+                  fontSize:10,fontWeight:700,
+                }}>
+                  {done?'✓':n}
+                </div>
+                {i<stepLabels.length-1 && <div style={{flex:1,height:1,background:done?'var(--amber)':'var(--border)'}}/>}
+              </div>
+              <div style={{fontSize:9,color:active?'var(--amber)':done?'var(--green-lt)':'var(--muted)',textAlign:'center',letterSpacing:'0.5px'}}>{label}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  // ── STEP 5: DONE ──
+  if (step === 5) {
+    const rec = KYC_REGISTRY[user.id];
+    return (
+      <div style={{maxWidth:600,margin:'0 auto'}}>
+        <div style={{textAlign:'center',padding:'32px 20px',background:'var(--surface)',border:'1px solid var(--green)',borderRadius:2}}>
+          <div style={{fontSize:48,marginBottom:16}}>✓</div>
+          <div style={{fontFamily:'var(--font-head)',fontSize:20,fontWeight:800,color:'var(--green-lt)',marginBottom:8}}>KYC Verified Successfully</div>
+          <div style={{fontSize:11,color:'var(--muted)',marginBottom:20}}>Your identity has been verified and linked to the DisasterChain aid network</div>
+          <div style={{padding:'14px 16px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2,marginBottom:16,textAlign:'left'}}>
+            <div style={{fontSize:9,color:'var(--muted)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8}}>Your Unique ID (UID)</div>
+            <div style={{fontFamily:'var(--font-head)',fontSize:22,fontWeight:800,color:'var(--amber)',letterSpacing:4}}>{rec.uid}</div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,textAlign:'left',marginBottom:20}}>
+            {[
+              ['Name', rec.fullName],
+              ['District', rec.address.district],
+              ['Aadhaar', rec.aadhaarNum],
+              ['Status', 'Verified ✓'],
+            ].map(([k,v])=>(
+              <div key={k} style={{padding:'8px 10px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2}}>
+                <div style={{fontSize:9,color:'var(--muted)',textTransform:'uppercase',letterSpacing:'1px',marginBottom:3}}>{k}</div>
+                <div style={{fontSize:12,fontWeight:600,color:k==='Status'?'var(--green-lt)':'var(--text)'}}>{v}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{fontSize:10,color:'var(--muted)',lineHeight:1.7,marginBottom:20,padding:'10px 12px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2,textAlign:'left'}}>
+            You can now receive aid packages assigned to your district. When a package is marked Delivered, it will appear in your Track Aid tab for confirmation.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <ProgressBar/>
+
+      {/* ── STEP 1: PERSONAL ── */}
+      {step === 1 && (
+        <div className="grid-main">
+          <div>
+            <div className="panel">
+              <div className="panel-header">
+                <span className="panel-title">Personal Details</span>
+                <span className="text-xs text-muted">as per official ID</span>
+              </div>
+              <div className="panel-body">
+                <div className="form-row">
+                  <FormGroup label="Full Name (as per Aadhaar)">
+                    <input value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="e.g. Priya Sharma"/>
+                  </FormGroup>
+                  <FormGroup label="Father's / Husband's Name">
+                    <input value={fatherName} onChange={e=>setFather(e.target.value)} placeholder="e.g. Ramesh Sharma"/>
+                  </FormGroup>
+                </div>
+                <div className="form-row">
+                  <FormGroup label="Date of Birth">
+                    <input type="date" value={dob} onChange={e=>setDob(e.target.value)}/>
+                  </FormGroup>
+                  <FormGroup label="Gender">
+                    <select value={gender} onChange={e=>setGender(e.target.value)}>
+                      <option>Female</option><option>Male</option><option>Transgender</option>
+                    </select>
+                  </FormGroup>
+                </div>
+                <div className="form-row">
+                  <FormGroup label="Mobile Number">
+                    <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+91 98765 43210"/>
+                  </FormGroup>
+                  <FormGroup label="Email Address">
+                    <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="priya@example.com"/>
+                  </FormGroup>
+                </div>
+                <button className="btn btn-primary btn-full" onClick={()=>{ if(!fullName||!dob||!phone){alert("Please fill all required fields.");return;} setStep(2); }} style={{marginTop:4}}>
+                  Continue →
+                </button>
+              </div>
+            </div>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:16}}>
+            <div className="panel">
+              <div className="panel-header"><span className="panel-title">Why KYC?</span></div>
+              <div className="panel-body">
+                {[
+                  {icon:"🪪", t:"Prevent fraud", d:"Ensures only genuine disaster-affected individuals receive aid"},
+                  {icon:"🔗", t:"On-chain identity", d:"Your verified ID is cryptographically linked to the blockchain"},
+                  {icon:"🔒", t:"Data privacy", d:"Documents are stored locally — never uploaded to any server"},
+                  {icon:"💸", t:"Direct aid release", d:"NGOs can release ETH directly to verified recipients' wallets"},
+                ].map(item=>(
+                  <div key={item.t} style={{display:'flex',gap:12,marginBottom:14}}>
+                    <div style={{fontSize:18,flexShrink:0}}>{item.icon}</div>
+                    <div>
+                      <div style={{fontSize:12,fontWeight:600,color:'var(--text)',marginBottom:2}}>{item.t}</div>
+                      <div className="text-xs text-muted" style={{lineHeight:1.6}}>{item.d}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 2: ADDRESS ── */}
+      {step === 2 && (
+        <div className="grid-main">
+          <div>
+            <div className="panel">
+              <div className="panel-header">
+                <span className="panel-title">Residential Address</span>
+                <span className="text-xs text-muted">current address proof</span>
+              </div>
+              <div className="panel-body">
+                <FormGroup label="House No. / Street">
+                  <input value={street} onChange={e=>setStreet(e.target.value)} placeholder="e.g. 12/A, MG Road"/>
+                </FormGroup>
+                <div className="form-row">
+                  <FormGroup label="Village / Town / City">
+                    <input value={village} onChange={e=>setVillage(e.target.value)} placeholder="e.g. Aluva"/>
+                  </FormGroup>
+                  <FormGroup label="District">
+                    <input value={district} onChange={e=>setDistrict(e.target.value)} placeholder="e.g. Ernakulam"/>
+                  </FormGroup>
+                </div>
+                <div className="form-row">
+                  <FormGroup label="State">
+                    <select value={state} onChange={e=>setState(e.target.value)}>
+                      {STATES.map(s=><option key={s}>{s}</option>)}
+                    </select>
+                  </FormGroup>
+                  <FormGroup label="PIN Code">
+                    <input value={pincode} onChange={e=>setPincode(e.target.value)} placeholder="e.g. 683101" maxLength={6}/>
+                  </FormGroup>
+                </div>
+                <div style={{display:'flex',gap:10}}>
+                  <button className="btn btn-ghost" onClick={()=>setStep(1)}>← Back</button>
+                  <button className="btn btn-primary btn-full" onClick={()=>{ if(!village||!district||!pincode){alert("Please fill all address fields.");return;} setStep(3); }}>
+                    Continue →
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="panel">
+              <div className="panel-header"><span className="panel-title">Address Tips</span></div>
+              <div className="panel-body">
+                <div style={{fontSize:11,color:'var(--muted)',lineHeight:1.8}}>
+                  Enter the address exactly as it appears on your <strong style={{color:'var(--text)'}}>Aadhaar card</strong> or <strong style={{color:'var(--text)'}}>Ration Card</strong>.<br/><br/>
+                  The district you enter will be used to <strong style={{color:'var(--amber)'}}>match you with aid shipments</strong> going to your area.<br/><br/>
+                  Make sure your PIN code is correct — it is used for geographic verification.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 3: DOCUMENTS ── */}
+      {step === 3 && (
+        <div className="grid-main">
+          <div style={{display:'flex',flexDirection:'column',gap:16}}>
+            <div className="panel">
+              <div className="panel-header">
+                <span className="panel-title">Identity Documents</span>
+                <span className="tag tag-amber">Required</span>
+              </div>
+              <div className="panel-body">
+                {/* Aadhaar */}
+                <div style={{padding:'14px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2,marginBottom:14}}>
+                  <div style={{fontSize:10,color:'var(--amber)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:10,fontWeight:700}}>Aadhaar Card</div>
+                  <FormGroup label="12-Digit Aadhaar Number">
+                    <input value={aadhaarNum} onChange={e=>setAadhaar(e.target.value.replace(/\D/g,'').slice(0,12))} placeholder="XXXX XXXX XXXX" maxLength={12}
+                      style={{letterSpacing:4,fontSize:16,fontWeight:700}}/>
+                  </FormGroup>
+                  <FormGroup label="Upload Aadhaar Card (front)">
+                    <input type="file" accept="image/*,application/pdf" onChange={e=>handleFileChange(e,setAadhaarFile,setAadhaarPreview)}
+                      style={{padding:'6px',cursor:'pointer'}}/>
+                  </FormGroup>
+                  {aadhaarPreview && aadhaarPreview.startsWith('data:image') && (
+                    <div style={{marginTop:8}}>
+                      <img src={aadhaarPreview} alt="Aadhaar preview" style={{width:'100%',maxHeight:120,objectFit:'cover',borderRadius:2,border:'1px solid var(--border)'}}/>
+                      <div style={{fontSize:9,color:'var(--green-lt)',marginTop:4}}>✓ Document uploaded</div>
+                    </div>
+                  )}
+                  {aadhaarFile && !aadhaarPreview?.startsWith('data:image') && (
+                    <div style={{fontSize:9,color:'var(--green-lt)',marginTop:4}}>✓ PDF uploaded: {aadhaarFile.name}</div>
+                  )}
+                </div>
+
+                {/* Photo */}
+                <div style={{padding:'14px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2,marginBottom:14}}>
+                  <div style={{fontSize:10,color:'var(--amber)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:10,fontWeight:700}}>Passport Photo</div>
+                  <FormGroup label="Upload recent passport-size photo">
+                    <input type="file" accept="image/*" onChange={e=>handleFileChange(e,setPhotoFile,setPhotoPreview)} style={{padding:'6px',cursor:'pointer'}}/>
+                  </FormGroup>
+                  {photoPreview && (
+                    <div style={{marginTop:8,display:'flex',gap:12,alignItems:'center'}}>
+                      <img src={photoPreview} alt="Photo preview" style={{width:60,height:72,objectFit:'cover',borderRadius:2,border:'1px solid var(--border)'}}/>
+                      <div style={{fontSize:9,color:'var(--green-lt)'}}>✓ Photo uploaded</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div style={{display:'flex',gap:10}}>
+              <button className="btn btn-ghost" onClick={()=>setStep(2)}>← Back</button>
+              <button className="btn btn-primary btn-full" onClick={()=>{ if(!aadhaarNum||aadhaarNum.length<12){alert("Please enter a valid 12-digit Aadhaar number.");return;} if(!aadhaarFile){alert("Please upload your Aadhaar card.");return;} setStep(4); }}>
+                Continue →
+              </button>
+            </div>
+          </div>
+
+          <div style={{display:'flex',flexDirection:'column',gap:16}}>
+            <div className="panel">
+              <div className="panel-header">
+                <span className="panel-title">Bank / Ration Details</span>
+                <span className="tag tag-muted">Optional</span>
+              </div>
+              <div className="panel-body">
+                <FormGroup label="Ration Card Number">
+                  <input value={rationCard} onChange={e=>setRation(e.target.value)} placeholder="e.g. KL/ERN/123456"/>
+                </FormGroup>
+                <FormGroup label="Bank Account Number">
+                  <input value={bankAccount} onChange={e=>setBank(e.target.value)} placeholder="e.g. 1234567890"/>
+                </FormGroup>
+                <FormGroup label="IFSC Code">
+                  <input value={ifsc} onChange={e=>setIfsc(e.target.value.toUpperCase())} placeholder="e.g. SBIN0001234"/>
+                </FormGroup>
+                <div style={{fontSize:10,color:'var(--muted)',lineHeight:1.7,marginTop:8,padding:'8px 10px',background:'#4a7c5911',border:'1px solid #4a7c5966',borderRadius:2}}>
+                  Bank details allow NGOs to release ETH aid directly to your account through the smart contract.
+                </div>
+              </div>
+            </div>
+            <div className="panel">
+              <div className="panel-header"><span className="panel-title">Document Guidelines</span></div>
+              <div className="panel-body">
+                <div style={{fontSize:11,color:'var(--muted)',lineHeight:1.8}}>
+                  ✓ Upload clear, readable scans<br/>
+                  ✓ Accepted formats: JPG, PNG, PDF<br/>
+                  ✓ Max file size: 2MB<br/>
+                  ✓ All 4 corners of the document must be visible<br/><br/>
+                  <span style={{color:'var(--amber)'}}>Note:</span> Documents are stored locally in your browser only. Nothing is sent to any external server.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 4: REVIEW ── */}
+      {step === 4 && (
+        <div className="grid-main">
+          <div>
+            <div className="panel">
+              <div className="panel-header">
+                <span className="panel-title">Review Your Application</span>
+                <span className="tag tag-amber">Final Step</span>
+              </div>
+              <div className="panel-body">
+                {/* Personal */}
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:9,color:'var(--amber)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8,fontWeight:700}}>Personal</div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+                    {[['Full Name',fullName],['Father\'s Name',fatherName],['Date of Birth',dob],['Gender',gender],['Mobile',phone],['Email',email]].map(([k,v])=>(
+                      <div key={k} style={{padding:'7px 10px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2}}>
+                        <div style={{fontSize:9,color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.8px',marginBottom:2}}>{k}</div>
+                        <div style={{fontSize:11,fontWeight:600}}>{v||'—'}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Address */}
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:9,color:'var(--amber)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8,fontWeight:700}}>Address</div>
+                  <div style={{padding:'10px 12px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2,fontSize:12,lineHeight:1.8}}>
+                    {street}{street?', ':''}{village}, {district}, {state} — {pincode}
+                  </div>
+                </div>
+                {/* Documents */}
+                <div style={{marginBottom:20}}>
+                  <div style={{fontSize:9,color:'var(--amber)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8,fontWeight:700}}>Documents</div>
+                  <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>
+                    {aadhaarPreview && aadhaarPreview.startsWith('data:image') && (
+                      <div style={{textAlign:'center'}}>
+                        <img src={aadhaarPreview} alt="Aadhaar" style={{width:120,height:70,objectFit:'cover',borderRadius:2,border:'1px solid var(--border)'}}/>
+                        <div style={{fontSize:9,color:'var(--muted)',marginTop:3}}>Aadhaar Card</div>
+                      </div>
+                    )}
+                    {photoPreview && (
+                      <div style={{textAlign:'center'}}>
+                        <img src={photoPreview} alt="Photo" style={{width:50,height:62,objectFit:'cover',borderRadius:2,border:'1px solid var(--border)'}}/>
+                        <div style={{fontSize:9,color:'var(--muted)',marginTop:3}}>Photo</div>
+                      </div>
+                    )}
+                    <div style={{padding:'8px 12px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2,fontSize:11}}>
+                      Aadhaar: <strong>{aadhaarNum.replace(/(\d{4})(\d{4})(\d{4})/,'$1 $2 $3')}</strong>
+                      {rationCard && <><br/>Ration: <strong>{rationCard}</strong></>}
+                      {bankAccount && <><br/>Bank: <strong>XXXX{bankAccount.slice(-4)}</strong></>}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{padding:'10px 12px',background:'#4a7c5911',border:'1px solid #4a7c5966',borderRadius:2,fontSize:10,color:'var(--muted)',lineHeight:1.7,marginBottom:16}}>
+                  By submitting, you confirm that the information provided is accurate and matches your official Aadhaar records. A unique 12-digit UID will be generated and linked to your identity on the DisasterChain network.
+                </div>
+
+                {loading && <div className="mining-bar" style={{marginBottom:10}}/>}
+                <div style={{display:'flex',gap:10}}>
+                  <button className="btn btn-ghost" onClick={()=>setStep(3)} disabled={loading}>← Back</button>
+                  <button className="btn btn-green btn-full" onClick={submit} disabled={loading}>
+                    {loading ? "Verifying identity…" : "✓  Submit & Verify KYC"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="panel">
+              <div className="panel-header"><span className="panel-title">What Happens Next</span></div>
+              <div className="panel-body">
+                {[
+                  {n:"01",t:"UID Generated",d:"A unique 12-digit ID is created and cryptographically linked to your wallet."},
+                  {n:"02",t:"Area Matching",d:"Your district is matched against NGO shipment destinations."},
+                  {n:"03",t:"Aid Notification",d:"When a shipment reaches your area, you'll see it in the Track Aid tab."},
+                  {n:"04",t:"Claim Aid",d:"Confirm receipt of delivered packages — recorded permanently on the blockchain."},
+                ].map(item=>(
+                  <div key={item.n} style={{display:'flex',gap:12,marginBottom:14}}>
+                    <div style={{fontFamily:'var(--font-head)',fontWeight:800,fontSize:16,color:'var(--border2)',flexShrink:0,width:24}}>{item.n}</div>
+                    <div>
+                      <div style={{fontSize:12,fontWeight:600,color:'var(--text)',marginBottom:2}}>{item.t}</div>
+                      <div className="text-xs text-muted" style={{lineHeight:1.6}}>{item.d}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// RECIPIENT — TRACK AID
+// ═══════════════════════════════════════════════════
+// Collection receipts stored in memory + blockchain
+const COLLECTION_RECEIPTS = {}; // shipmentId -> receipt record
+
+function CollectionModal({ shipment, kyc, onClose, onCollected }) {
+  const [step, setStep]         = useState("verify"); // verify | otp | collecting | done
+  const [uidInput, setUidInput] = useState("");
+  const [otpSent, setOtpSent]   = useState("");
+  const [otpInput, setOtpInput] = useState("");
+  const [uidErr, setUidErr]     = useState("");
+  const [otpErr, setOtpErr]     = useState("");
+  const [receipt, setReceipt]   = useState(null);
+
+  // Step 1: verify UID matches KYC record
+  const verifyUID = () => {
+    const entered = uidInput.replace(/\s/g,'');
+    const actual  = kyc.uid.replace(/\s/g,'');
+    if (entered !== actual) {
+      setUidErr("UID does not match your registered record. Check your KYC certificate.");
+      return;
+    }
+    setUidErr("");
+    // Generate a 6-digit OTP (simulated — in real app sent via SMS to kyc.phone)
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    setOtpSent(otp);
+    setStep("otp");
+  };
+
+  // Step 2: verify OTP
+  const verifyOTP = async () => {
+    if (otpInput !== otpSent) {
+      setOtpErr("Incorrect OTP. Please try again.");
+      return;
+    }
+    setOtpErr("");
+    setStep("collecting");
+    // Mine a collection block on the blockchain
+    await new Promise(r => setTimeout(r, 1800));
+    const data = {
+      type: "AID_COLLECTED",
+      shipmentId: shipment.id,
+      recipientName: kyc.fullName,
+      recipientUID: kyc.uid,
+      recipientAadhaar: kyc.aadhaarNum,
+      recipientDistrict: kyc.address.district,
+      recipientWallet: kyc.walletAddress || "—",
+      items: shipment.items,
+      collectedAt: new Date().toISOString(),
+    };
+    const blk = bc.add(data);
+    const rec = {
+      ...data,
+      id: `REC${DB.uid()}`,
+      blockHash: blk.hash,
+      blockIndex: blk.index,
+    };
+    COLLECTION_RECEIPTS[shipment.id] = rec;
+    // Mark shipment as collected
+    shipment.collected = true;
+    shipment.collectedBy = kyc.uid;
+    setReceipt(rec);
+    setStep("done");
+  };
+
+  const overlayStyle = {
+    position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:1000,
+    display:'flex',alignItems:'center',justifyContent:'center',padding:20,
+  };
+  const cardStyle = {
+    background:'var(--surface)',border:'1px solid var(--border)',borderRadius:2,
+    width:'100%',maxWidth:480,maxHeight:'90vh',overflowY:'auto',
+  };
+
+  return (
+    <div style={overlayStyle} onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
+      <div style={cardStyle}>
+        {/* Header */}
+        <div style={{padding:'14px 18px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div>
+            <div style={{fontFamily:'var(--font-head)',fontSize:14,fontWeight:700}}>Aid Collection</div>
+            <div style={{fontSize:10,color:'var(--muted)',marginTop:2}}>{shipment.id} · {shipment.description}</div>
+          </div>
+          <button onClick={onClose} style={{background:'none',border:'none',color:'var(--muted)',cursor:'pointer',fontSize:18,lineHeight:1}}>✕</button>
+        </div>
+
+        {/* STEP: VERIFY UID */}
+        {step === "verify" && (
+          <div style={{padding:20}}>
+            <div style={{marginBottom:16,padding:'10px 12px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2}}>
+              <div style={{fontSize:10,color:'var(--muted)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:6}}>Package Contents</div>
+              <div style={{fontSize:12,color:'var(--text)'}}>{shipment.items}</div>
+              <div style={{fontSize:10,color:'var(--muted)',marginTop:4}}>📍 For {shipment.recipientArea}</div>
+            </div>
+
+            <div style={{marginBottom:16,textAlign:'center'}}>
+              {kyc.photoPreview && (
+                <img src={kyc.photoPreview} alt="KYC photo" style={{width:60,height:72,objectFit:'cover',borderRadius:2,border:'2px solid var(--amber)',marginBottom:8}}/>
+              )}
+              <div style={{fontSize:13,fontWeight:700,color:'var(--text)'}}>{kyc.fullName}</div>
+              <div style={{fontSize:10,color:'var(--muted)',marginTop:3}}>📍 {kyc.address.district}, {kyc.address.state}</div>
+            </div>
+
+            <div style={{marginBottom:6}}>
+              <label style={{display:'block',fontSize:10,letterSpacing:'1.2px',textTransform:'uppercase',color:'var(--muted)',marginBottom:5}}>
+                Enter Your 12-Digit UID to Verify
+              </label>
+              <input
+                value={uidInput}
+                onChange={e=>{ setUidInput(e.target.value.replace(/\D/g,'').slice(0,12)); setUidErr(""); }}
+                placeholder="XXXX XXXX XXXX"
+                style={{letterSpacing:4,fontSize:18,fontWeight:700,textAlign:'center'}}
+              />
+            </div>
+            {uidErr && <div style={{fontSize:11,color:'var(--red)',marginBottom:10}}>{uidErr}</div>}
+
+            <div style={{fontSize:10,color:'var(--muted)',marginBottom:16,lineHeight:1.6,padding:'8px 10px',background:'#4a7c5911',border:'1px solid #4a7c5966',borderRadius:2}}>
+              Your UID is the 12-digit number on your KYC certificate. It must match your Aadhaar-linked record to collect this aid.
+            </div>
+
+            <button className="btn btn-primary btn-full" onClick={verifyUID} disabled={uidInput.length < 12}>
+              Verify UID →
+            </button>
+          </div>
+        )}
+
+        {/* STEP: OTP */}
+        {step === "otp" && (
+          <div style={{padding:20}}>
+            <div style={{textAlign:'center',marginBottom:20}}>
+              <div style={{fontSize:32,marginBottom:8}}>📱</div>
+              <div style={{fontSize:13,fontWeight:600,color:'var(--text)',marginBottom:4}}>OTP Verification</div>
+              <div style={{fontSize:11,color:'var(--muted)',lineHeight:1.6}}>
+                A one-time password has been sent to the mobile number linked to UID <strong style={{color:'var(--amber)'}}>{kyc.uid}</strong>
+              </div>
+              {/* In demo mode, show the OTP */}
+              <div style={{marginTop:12,padding:'8px 16px',background:'#7a3f0d22',border:'1px solid #7a3f0d66',borderRadius:2,display:'inline-block'}}>
+                <div style={{fontSize:9,color:'var(--muted)',textTransform:'uppercase',letterSpacing:'1px',marginBottom:4}}>Demo — OTP (shown for testing)</div>
+                <div style={{fontFamily:'var(--font-head)',fontSize:24,fontWeight:800,color:'var(--amber)',letterSpacing:6}}>{otpSent}</div>
+              </div>
+            </div>
+
+            <div style={{marginBottom:6}}>
+              <label style={{display:'block',fontSize:10,letterSpacing:'1.2px',textTransform:'uppercase',color:'var(--muted)',marginBottom:5}}>Enter OTP</label>
+              <input
+                value={otpInput}
+                onChange={e=>{ setOtpInput(e.target.value.replace(/\D/g,'').slice(0,6)); setOtpErr(""); }}
+                placeholder="6-digit OTP"
+                maxLength={6}
+                style={{letterSpacing:8,fontSize:22,fontWeight:700,textAlign:'center'}}
+              />
+            </div>
+            {otpErr && <div style={{fontSize:11,color:'var(--red)',marginBottom:10}}>{otpErr}</div>}
+
+            <div style={{display:'flex',gap:10,marginTop:16}}>
+              <button className="btn btn-ghost" onClick={()=>{ setStep("verify"); setOtpInput(""); }}>← Back</button>
+              <button className="btn btn-primary btn-full" onClick={verifyOTP} disabled={otpInput.length < 6}>
+                Confirm & Collect Aid →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP: COLLECTING (mining) */}
+        {step === "collecting" && (
+          <div style={{padding:40,textAlign:'center'}}>
+            <div className="mining-bar" style={{marginBottom:24}}/>
+            <div style={{fontSize:13,fontWeight:600,color:'var(--text)',marginBottom:8}}>Recording collection on blockchain…</div>
+            <div style={{fontSize:11,color:'var(--muted)'}}>Mining block · Please wait</div>
+          </div>
+        )}
+
+        {/* STEP: DONE — RECEIPT */}
+        {step === "done" && receipt && (
+          <div style={{padding:20}}>
+            <div style={{textAlign:'center',marginBottom:20}}>
+              <div style={{fontSize:48,marginBottom:8}}>✓</div>
+              <div style={{fontFamily:'var(--font-head)',fontSize:18,fontWeight:800,color:'var(--green-lt)',marginBottom:4}}>Aid Collected Successfully</div>
+              <div style={{fontSize:11,color:'var(--muted)'}}>Collection permanently recorded on chain</div>
+            </div>
+
+            {/* Receipt card */}
+            <div style={{background:'var(--bg)',border:'1px solid var(--green)',borderRadius:2,padding:16,marginBottom:16}}>
+              <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14,paddingBottom:12,borderBottom:'1px solid var(--border)'}}>
+                {kyc.photoPreview && <img src={kyc.photoPreview} alt="photo" style={{width:44,height:52,objectFit:'cover',borderRadius:2,border:'1px solid var(--border)'}}/>}
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:'var(--text)'}}>{kyc.fullName}</div>
+                  <div style={{fontSize:10,color:'var(--muted)',marginTop:3}}>UID: <span style={{letterSpacing:2,fontWeight:600,color:'var(--amber)'}}>{kyc.uid}</span></div>
+                  <div style={{fontSize:10,color:'var(--muted)',marginTop:2}}>📍 {kyc.address.district}, {kyc.address.state}</div>
+                </div>
+              </div>
+
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:12}}>
+                {[
+                  ['Receipt ID', receipt.id],
+                  ['Package', shipment.id],
+                  ['Collected At', fmtTime(receipt.collectedAt)],
+                  ['Block #', `#${receipt.blockIndex}`],
+                ].map(([k,v])=>(
+                  <div key={k} style={{padding:'6px 8px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:2}}>
+                    <div style={{fontSize:9,color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.8px',marginBottom:2}}>{k}</div>
+                    <div style={{fontSize:11,fontWeight:600,color:'var(--text)'}}>{v}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{marginBottom:10}}>
+                <div style={{fontSize:9,color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.8px',marginBottom:4}}>Items Collected</div>
+                <div style={{fontSize:11,color:'var(--text)',lineHeight:1.6}}>{shipment.items}</div>
+              </div>
+
+              <div style={{fontSize:9,color:'var(--muted)',marginBottom:2}}>Blockchain TX Hash</div>
+              <div style={{fontSize:9,color:'var(--green-lt)',fontFamily:'var(--font-body)',wordBreak:'break-all'}}>{receipt.blockHash}</div>
+            </div>
+
+            <div style={{fontSize:10,color:'var(--muted)',lineHeight:1.7,marginBottom:16,padding:'8px 10px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2}}>
+              This receipt is permanently recorded on the DisasterChain blockchain. Donors, NGOs, and auditors can verify this collection using block #{receipt.blockIndex}.
+            </div>
+
+            <button className="btn btn-green btn-full" onClick={()=>{ onCollected(receipt); onClose(); }}>
+              Done — View Updated Tracker
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RecipientTrack({ user, tick, onTick }) {
+  const [blocks, setBlocks]       = useState([...bc.chain]);
+  const [collecting, setCollecting] = useState(null); // shipment being collected
+  const [notif, setNotif]         = useState("");
+  const myKyc = KYC_REGISTRY[user.id];
+
+  useEffect(()=>{
+    setBlocks([...bc.chain]);
+  },[tick]);
+
+  const handleCollected = (receipt) => {
+    setNotif(`Aid collected! Receipt ${receipt.id} recorded on block #${receipt.blockIndex}`);
+    onTick();
+  };
+
+  return (
+    <div>
+      {/* Collection modal */}
+      {collecting && (
+        <CollectionModal
+          shipment={collecting}
+          kyc={myKyc}
+          onClose={()=>setCollecting(null)}
+          onCollected={handleCollected}
+        />
+      )}
+
+      {notif && <Notif msg={notif} onDone={()=>setNotif("")}/>}
+
+      {/* Identity banner */}
+      {myKyc && (
+        <div style={{padding:'12px 16px',background:'#4a7c5911',border:'1px solid #4a7c5966',borderRadius:2,marginBottom:20,display:'flex',alignItems:'center',gap:14}}>
+          {myKyc.photoPreview && <img src={myKyc.photoPreview} alt="photo" style={{width:40,height:48,objectFit:'cover',borderRadius:2,border:'1px solid var(--border)',flexShrink:0}}/>}
+          <div style={{flex:1}}>
+            <div style={{fontSize:12,fontWeight:700,color:'var(--green-lt)'}}>{myKyc.fullName}</div>
+            <div className="text-xs text-muted mt-4">UID: <span style={{fontWeight:600,color:'var(--text)',letterSpacing:2}}>{myKyc.uid}</span></div>
+            <div className="text-xs text-muted mt-4">📍 {myKyc.address.district}, {myKyc.address.state} — {myKyc.address.pincode}</div>
+            {myKyc.phone && <div className="text-xs text-muted mt-4">📞 {myKyc.phone}</div>}
+          </div>
+          <span className="tag tag-green">KYC Verified</span>
+        </div>
+      )}
+
+      <div className="grid-3" style={{marginBottom:20}}>
+        <StatBlock label="Aid Packages" value={DB.shipments.length}/>
+        <StatBlock label="Delivered" value={DB.shipments.filter(s=>s.status==="DELIVERED").length} color="var(--green-lt)"/>
+        <StatBlock label="Collected" value={Object.keys(COLLECTION_RECEIPTS).length} color="#9b6b9e"/>
+      </div>
+
+      <div className="grid-main">
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div className="panel">
+            <div className="panel-header">
+              <span className="panel-title">Package Tracker</span>
+              <span className="text-xs text-muted">verified on blockchain</span>
+            </div>
+            <div className="panel-body">
+              {DB.shipments.length===0
+                ? <div className="empty"><div className="empty-icon">◎</div>No packages yet. The NGO will create shipments for your area.</div>
+                : DB.shipments.map(s=>{
+                  const shipScans   = DB.scans.filter(sc=>sc.shipmentId===s.id);
+                  const isDelivered = s.status === "DELIVERED";
+                  const isCollected = !!COLLECTION_RECEIPTS[s.id];
+                  const areaMatch   = myKyc && s.recipientArea.toLowerCase().includes(myKyc.address.district.toLowerCase());
+                  const receipt     = COLLECTION_RECEIPTS[s.id];
+
+                  return (
+                    <div key={s.id} style={{marginBottom:20,paddingBottom:20,borderBottom:'1px solid var(--border)'}}>
+                      <div className="flex-between" style={{marginBottom:8}}>
+                        <div>
+                          <div style={{fontSize:13,fontWeight:700}}>{s.description}</div>
+                          <div className="text-xs text-muted mt-4">{s.items}</div>
+                        </div>
+                        <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
+                          <span className={`tag ${STATUS_TAG[s.status]||'tag-muted'}`}>{s.status}</span>
+                          {isCollected && <span className="tag tag-green" style={{fontSize:9}}>Collected ✓</span>}
+                          {areaMatch && !isCollected && <span className="tag tag-blue" style={{fontSize:9}}>Your Area</span>}
+                        </div>
+                      </div>
+
+                      <div className="flex gap-8" style={{marginBottom:10}}>
+                        <span className="mono text-xs text-muted">{s.id}</span>
+                        <span className="text-xs text-muted">·</span>
+                        <span className="text-xs text-muted">📍 {s.recipientArea}</span>
+                      </div>
+
+                      <div className="progress-wrap" style={{marginBottom:14}}>
+                        <div className="progress-bar" style={{width:`${isCollected?100:STATUS_PROG[s.status]||8}%`,background:isCollected?'var(--green)':STATUS_COL[s.status]||'var(--border2)'}}/>
+                      </div>
+
+                      {/* Already collected — show receipt */}
+                      {isCollected && receipt && (
+                        <div style={{padding:'10px 12px',background:'#4a7c5911',border:'1px solid #4a7c5966',borderRadius:2,marginBottom:12}}>
+                          <div style={{fontSize:11,fontWeight:600,color:'var(--green-lt)',marginBottom:4}}>✓ Aid Collected by {receipt.recipientName}</div>
+                          <div className="text-xs text-muted">Receipt: {receipt.id} · Block #{receipt.blockIndex}</div>
+                          <div className="text-xs text-muted mt-4">{fmtTime(receipt.collectedAt)}</div>
+                          <div style={{fontSize:9,color:'var(--border2)',marginTop:4,fontFamily:'var(--font-body)',wordBreak:'break-all'}}>{fmtHash(receipt.blockHash)}</div>
+                        </div>
+                      )}
+
+                      {/* Collect button — delivered, not yet collected, has KYC */}
+                      {isDelivered && !isCollected && myKyc && (
+                        <div style={{padding:'12px 14px',background:'#3a7bd511',border:'1px solid #3a7bd566',borderRadius:2,marginBottom:12}}>
+                          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,marginBottom:8}}>
+                            <div>
+                              <div style={{fontSize:12,fontWeight:700,color:'#6fa8f5'}}>Ready to Collect</div>
+                              <div className="text-xs text-muted mt-4">Logistics has delivered this package to your area. Verify your identity to collect.</div>
+                            </div>
+                          </div>
+                          <button
+                            className="btn btn-primary btn-full"
+                            onClick={()=>setCollecting(s)}
+                          >
+                            Collect Aid Package →
+                          </button>
+                        </div>
+                      )}
+
+                      {/* No KYC — prompt to register */}
+                      {isDelivered && !isCollected && !myKyc && (
+                        <div style={{padding:'10px 12px',background:'#7a3f0d11',border:'1px solid #7a3f0d44',borderRadius:2,marginBottom:12,fontSize:11,color:'var(--amber)'}}>
+                          Complete KYC registration to collect this aid package
+                        </div>
+                      )}
+
+                      {/* Timeline */}
+                      {shipScans.length > 0 ? (
+                        <div>
+                          <div style={{fontSize:10,color:'var(--muted)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:10}}>Delivery Checkpoints</div>
+                          {shipScans.map((sc,i)=>(
+                            <div key={sc.id} className="timeline-item">
+                              <div className="timeline-dot-wrap">
+                                <div className="tl-dot" style={{borderColor:STATUS_COL[sc.status],background:i===shipScans.length-1?STATUS_COL[sc.status]:'transparent'}}/>
+                                {i<shipScans.length-1 && <div className="tl-line"/>}
+                              </div>
+                              <div className="tl-content">
+                                <div className="tl-loc">📍 {sc.location}</div>
+                                <div className="tl-meta">{fmtTime(sc.timestamp)} · {sc.status}</div>
+                                <div className="tl-meta">{sc.gpsCoords}</div>
+                                <div className="tl-tx">block #{sc.blockIndex} · {fmtHash(sc.blockHash)}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted" style={{fontStyle:'italic'}}>Awaiting first logistics checkpoint…</div>
+                      )}
+                    </div>
+                  );
+                })
+              }
+            </div>
+          </div>
+
+          <div className="panel">
+            <div className="panel-header"><span className="panel-title">Aid Contributors</span></div>
+            <div className="panel-body" style={{padding:'0 16px'}}>
+              {DB.donations.length===0
+                ? <div className="empty"><div className="empty-icon">◎</div>No donations yet</div>
+                : DB.donations.map(d=>(
+                  <div key={d.id} className="data-row">
+                    <div style={{paddingTop:3}}><div className="dot dot-green"/></div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div className="flex-between">
+                        <span style={{fontSize:13,fontWeight:600}}>{d.donorName}</span>
+                        <span className="text-amber fw-700" style={{fontSize:14}}>{d.amount} ETH</span>
+                      </div>
+                      <div className="text-xs text-muted mt-4">{d.disaster} · {fmtTime(d.createdAt)}</div>
+                      <div className="text-xs text-muted mono mt-4">{fmtHash(d.blockHash)}</div>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style={{marginBottom:12}}>
+            <span className="text-xs text-muted" style={{lineHeight:1.6}}>Every collection is permanently recorded and cryptographically linked. Donors can verify exactly who received their contribution.</span>
+          </div>
+          <ChainPanel blocks={blocks}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// RECIPIENT DASHBOARD (wrapper)
+// ═══════════════════════════════════════════════════
+function RecipientDash({ user, tick, onTick }) {
+  const [subPage, setSubPage]   = useState(() => KYC_REGISTRY[user.id] ? "track" : "register");
+  const [myKyc, setMyKyc]       = useState(() => KYC_REGISTRY[user.id] || null);
+
+  const onRegistered = (rec) => { setMyKyc(rec); setSubPage("track"); };
+
+  return (
+    <div>
+      {/* Sub nav */}
+      <div style={{display:'flex',gap:8,marginBottom:20}}>
+        <button className={`btn ${subPage==='register'?'btn-primary':'btn-ghost'}`} style={{padding:'7px 16px',fontSize:11}} onClick={()=>setSubPage('register')}>
+          🪪 KYC Registration
+        </button>
+        <button className={`btn ${subPage==='track'?'btn-primary':'btn-ghost'}`} style={{padding:'7px 16px',fontSize:11}} onClick={()=>setSubPage('track')}>
+          📦 Track &amp; Collect Aid
+        </button>
+        {myKyc && (
+          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:8,fontSize:11,color:'var(--green-lt)'}}>
+            <div className="dot dot-green"/> KYC Verified · {myKyc.uid}
+          </div>
+        )}
+      </div>
+      {subPage==='register'
+        ? <RecipientRegister user={user} onRegistered={onRegistered}/>
+        : <RecipientTrack user={user} tick={tick} onTick={onTick}/>
+      }
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// WALLET ACCOUNT SELECTOR (popup for donor)
+// ═══════════════════════════════════════════════════
+
+// Simulated testnet wallet accounts (like MetaMask would show)
+const TESTNET_ACCOUNTS = [
+  { label:"Account #0 — Arjun Mehta",   address:"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", eth:100.0 },
+  { label:"Account #1 — Rahul Gupta",   address:"0x70997970C51812dc3A010C7d01b50e0d17dc79C8", eth:85.5  },
+  { label:"Account #2 — Sunita Rao",    address:"0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", eth:200.0 },
+  { label:"Account #3 — Vikram Nair",   address:"0x90F79bf6EB2c4f870365E785982E1f101E93b906", eth:50.25 },
+  { label:"Account #4 — Deepa Pillai",  address:"0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65", eth:320.0 },
+];
+
+function WalletSelector({ onSelect, onClose }) {
+  const [sel, setSel]         = useState(null);
+  const [loadAmt, setLoadAmt] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [step, setStep]       = useState("select"); // select | load | done
+
+  const confirm = async () => {
+    if (!sel) return;
+    setLoading(true);
+    await new Promise(r => setTimeout(r, 900));
+    // Apply loaded ETH if any
+    const extra = parseFloat(loadAmt) || 0;
+    const finalEth = parseFloat((sel.eth + extra).toFixed(4));
+    // Update the donor user's ETH balance in DB
+    const donor = DB.byId("donor1");
+    donor.eth = finalEth;
+    donor.wallet = sel.address;
+    donor.name = sel.label.split("—")[1]?.trim() || donor.name;
+    setLoading(false);
+    onSelect({ ...donor });
+  };
+
+  const overlayStyle = {
+    position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:999,
+    display:"flex",alignItems:"center",justifyContent:"center",padding:20,
+  };
+
+  return (
+    <div style={overlayStyle} onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
+      <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:2,width:"100%",maxWidth:460,overflow:"hidden"}}>
+        {/* Header */}
+        <div style={{padding:"14px 18px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--bg)"}}>
+          <div>
+            <div style={{fontFamily:"var(--font-head)",fontSize:14,fontWeight:700}}>Connect Wallet</div>
+            <div style={{fontSize:10,color:"var(--muted)",marginTop:2}}>DisasterChain Testnet · Select account</div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <div className="dot dot-green"/>
+            <span style={{fontSize:10,color:"var(--muted)"}}>Testnet</span>
+          </div>
+        </div>
+
+        <div style={{padding:18}}>
+          {/* Account list */}
+          <div style={{fontSize:10,color:"var(--muted)",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:10}}>Select Account</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:16}}>
+            {TESTNET_ACCOUNTS.map((acc,i) => (
+              <div key={i}
+                onClick={()=>setSel(acc)}
+                style={{
+                  padding:"10px 14px",background:sel?.address===acc.address?"rgba(232,130,42,0.08)":"var(--bg)",
+                  border:`1px solid ${sel?.address===acc.address?"var(--amber)":"var(--border)"}`,
+                  borderRadius:2,cursor:"pointer",display:"flex",alignItems:"center",gap:12,transition:"all 0.1s"
+                }}>
+                {/* Radio dot */}
+                <div style={{width:14,height:14,borderRadius:"50%",border:`2px solid ${sel?.address===acc.address?"var(--amber)":"var(--border2)"}`,flexShrink:0,background:sel?.address===acc.address?"var(--amber)":"transparent"}}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:12,fontWeight:600,color:"var(--text)"}}>{acc.label}</div>
+                  <div style={{fontSize:9,color:"var(--muted)",fontFamily:"var(--font-body)",marginTop:2}}>{acc.address.slice(0,20)}…{acc.address.slice(-6)}</div>
+                </div>
+                <div style={{textAlign:"right",flexShrink:0}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"var(--amber)",fontFamily:"var(--font-head)"}}>{acc.eth}</div>
+                  <div style={{fontSize:9,color:"var(--muted)"}}>ETH</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Load ETH section */}
+          {sel && (
+            <div style={{padding:"12px 14px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:2,marginBottom:16}}>
+              <div style={{fontSize:10,color:"var(--muted)",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:10}}>Load Test ETH (Optional)</div>
+              <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+                <input
+                  type="number"
+                  value={loadAmt}
+                  onChange={e=>setLoadAmt(e.target.value)}
+                  placeholder="0.00"
+                  min="0"
+                  step="10"
+                  style={{flex:1,fontSize:15,fontWeight:700,color:"var(--amber)"}}
+                />
+                <span style={{fontSize:12,color:"var(--muted)",flexShrink:0}}>ETH</span>
+              </div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {[10,50,100,500].map(amt=>(
+                  <button key={amt} className="btn btn-ghost" style={{padding:"4px 12px",fontSize:11}}
+                    onClick={()=>setLoadAmt(String(amt))}>
+                    +{amt}
+                  </button>
+                ))}
+              </div>
+              <div style={{fontSize:10,color:"var(--muted)",marginTop:8,lineHeight:1.6}}>
+                Current: <strong style={{color:"var(--text)"}}>{sel.eth} ETH</strong>
+                {loadAmt && parseFloat(loadAmt)>0 && (
+                  <> → After load: <strong style={{color:"var(--green-lt)"}}>{(sel.eth+parseFloat(loadAmt)).toFixed(2)} ETH</strong></>
+                )}
+              </div>
+            </div>
+          )}
+
+          <button className="btn btn-primary btn-full" onClick={confirm} disabled={!sel||loading}>
+            {loading ? "Connecting wallet…" : sel ? `Connect ${sel.label.split("—")[1]?.trim()||"Account"}` : "Select an account"}
+          </button>
+          <button className="btn btn-ghost btn-full" style={{marginTop:8,fontSize:11}} onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════
+function Login({ onLogin }) {
+  const [email, setEmail]         = useState("");
+  const [pw, setPw]               = useState("");
+  const [err, setErr]             = useState("");
+  const [loading, setLoad]        = useState(false);
+  const [showWallet, setShowWallet] = useState(false);
+  const [pendingUser, setPending]   = useState(null);
+
+  const go = async () => {
+    setErr(""); setLoad(true);
+    await new Promise(r=>setTimeout(r,600));
+    const u = DB.user(email.trim(), pw);
+    if (!u) { setErr("Invalid credentials — use one of the demo accounts below"); setLoad(false); return; }
+    if (u.role === "donor") {
+      // Show wallet selector popup for donors
+      setPending(u);
+      setShowWallet(true);
+      setLoad(false);
+    } else {
+      onLogin({...u});
+    }
+  };
+
+  const onWalletSelect = (userWithWallet) => {
+    setShowWallet(false);
+    setPending(null);
+    onLogin(userWithWallet);
+  };
+
+  const demos = [
+    { label:"Donor",         email:"arjun@donor.com",     pw:"donor123",  role:"donor" },
+    { label:"NGO",           email:"ngo@relief.org",      pw:"ngo123",    role:"ngo" },
+    { label:"Logistics",     email:"swift@logistics.com", pw:"swift123",  role:"logistics" },
+    { label:"Aid Recipient", email:"priya@relief.org",    pw:"relief123", role:"recipient" },
+  ];
+
+  return (
+    <div className="login-wrap">
+      {showWallet && (
+        <WalletSelector
+          onSelect={onWalletSelect}
+          onClose={()=>{ setShowWallet(false); setPending(null); }}
+        />
+      )}
+      <div className="login-card">
+        <div className="login-header">
+          <div className="login-wordmark">DisasterChain</div>
+          <div className="login-tagline">Humanitarian Aid · Blockchain Transparency</div>
+        </div>
+        <div className="login-panel">
+          <div className="login-title">Sign in</div>
+          {err && <div className="error-msg">{err}</div>}
+          <div className="form-group"><label>Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="you@example.com"/></div>
+          <div className="form-group"><label>Password</label><input type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="••••••••"/></div>
+          <button className="btn btn-primary btn-full" onClick={go} disabled={loading} style={{marginTop:4}}>
+            {loading ? "Connecting…" : "→  Sign in"}
+          </button>
+
+          <div style={{marginTop:24}}>
+            <div style={{fontSize:10,color:'var(--muted)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:10}}>Demo accounts</div>
+            <div className="demo-grid">
+              {demos.map(d=>(
+                <button key={d.email} className="demo-btn" onClick={()=>{setEmail(d.email);setPw(d.pw);setErr("");}}>
+                  <span className="role-name" style={{color:ROLE_AVATAR_COLOR[d.role]}}>{d.label}</span>
+                  <span className="role-email">{d.email}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{marginTop:16,textAlign:'center',fontSize:10,color:'var(--muted)'}}>
+          DisasterChain Testnet · Custom Blockchain Engine · No Hardhat Required
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// APP SHELL
+// ═══════════════════════════════════════════════════
+const NAV = {
+  donor:     [{ id:"donate",   icon:"◈", label:"Donate" },     { id:"chain", icon:"≡", label:"Ledger" }],
+  ngo:       [{ id:"shipments",icon:"▣", label:"Shipments" },  { id:"chain", icon:"≡", label:"Ledger" }],
+  logistics: [{ id:"scan",     icon:"◉", label:"Scan" },       { id:"chain", icon:"≡", label:"Ledger" }],
+  recipient: [{ id:"track",    icon:"◎", label:"Aid Portal" }, { id:"chain", icon:"≡", label:"Ledger" }],
+};
+const PAGE_TITLE = { donate:"Donations", shipments:"Shipment Management", scan:"Package Scanning", track:"Aid Recipient Portal", chain:"Blockchain Explorer" };
+
+function App() {
+  const [user, setUser] = useState(null);
+  const [page, setPage] = useState(null);
+  const [tick, setTick] = useState(0);
+
+  const refresh = useCallback(()=>setTick(t=>t+1),[]);
+
+  useEffect(()=>{
+    if (!user) return;
+    const interval = setInterval(refresh,5000);
+    return ()=>clearInterval(interval);
+  },[user]);
+
+  const login = (u) => {
+    setUser(u);
+    setPage(NAV[u.role][0].id);
+  };
+
+  if (!user) return <Login onLogin={login}/>;
+
+  const ac = ROLE_AVATAR_COLOR[user.role];
+
+  const renderPage = () => {
+    if (page === "chain") return <ChainPanel blocks={[...bc.chain]}/>;
+    if (user.role==="donor")     return <DonorDash     user={user} tick={tick} onTick={refresh}/>;
+    if (user.role==="ngo")       return <NGODash       user={user} tick={tick} onTick={refresh}/>;
+    if (user.role==="logistics") return <LogisticsDash user={user} tick={tick} onTick={refresh}/>;
+    if (user.role==="recipient") return <RecipientDash user={user} tick={tick} onTick={refresh}/>;
+    return null;
+  };
+
+  return (
+    <div className="app-wrap">
+      {/* Sidebar */}
+      <aside className="sidebar">
+        <div className="sidebar-logo">
+          <h1>Disaster<br/>Chain</h1>
+          <div className="sub">Testnet v1</div>
+        </div>
+
+        <div className="sidebar-section">Navigation</div>
+        {NAV[user.role].map(n=>(
+          <div key={n.id} className={`nav-item ${page===n.id?"active":""}`} onClick={()=>setPage(n.id)}>
+            <span className="icon">{n.icon}</span>
+            <span className="label">{n.label}</span>
+          </div>
+        ))}
+
+        <div style={{flex:1}}/>
+
+        <div className="sidebar-section">Network</div>
+        <div style={{padding:'0 16px 8px'}}>
+          <div className="flex-center gap-8" style={{marginBottom:6}}>
+            <div className="dot dot-green"/>
+            <span className="text-xs text-muted">Chain live</span>
+            <span className="text-xs text-muted" style={{marginLeft:'auto'}}>{bc.chain.length} blocks</span>
+          </div>
+          <div className="text-xs text-muted">Valid: <span style={{color:bc.valid()?"var(--green-lt)":"var(--red)"}}>{bc.valid()?"✓ Yes":"✗ Tampered"}</span></div>
+        </div>
+
+        <div className="sidebar-footer">
+          <div className="user-chip">
+            <div className="avatar" style={{background:`${ac}22`,border:`1px solid ${ac}55`,color:ac}}>{user.avatar}</div>
+            <div className="user-info">
+              <div className="user-name">{user.name}</div>
+              <div className="user-role">{user.role}</div>
+            </div>
+          </div>
+          <button className="btn btn-ghost btn-full" style={{marginTop:8,fontSize:11}} onClick={()=>setUser(null)}>Sign out</button>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <div className="main-area">
+        <div className="topbar">
+          <span style={{fontFamily:'var(--font-head)',fontWeight:700,fontSize:14,color:'var(--text)'}}>{PAGE_TITLE[page]||"Dashboard"}</span>
+          <div style={{flex:1}}/>
+          <div className="topbar-stat">Wallet <span className="mono" style={{fontSize:10}}>{user.wallet.slice(0,14)}…</span></div>
+          {user.role==="donor" && <div className="topbar-stat">Balance <span>{DB.byId(user.id)?.eth} ETH</span></div>}
+          <div className="topbar-stat">Blocks <span>{bc.chain.length}</span></div>
+          <div className="chain-status">
+            <div className="dot dot-green"/>
+            <span>Live</span>
+          </div>
+        </div>
+        <div className="content">
+          {renderPage()}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

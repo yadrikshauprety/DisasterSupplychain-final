@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DisasterChain — Hardhat Version</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Geist+Mono:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.1/ethers.umd.min.js"></script>
+<style>
+:root {
+  --bg:#0f0e0d;--surface:#171614;--border:#2a2723;--border2:#3a3530;
+  --text:#e8e2d9;--muted:#6b6560;--amber:#e8832a;--amber-dim:#7a3f0d;
+  --green:#4a7c59;--green-lt:#6aaf7e;--red:#c0392b;--blue:#3a7bd5;
+  --font-body:'Geist Mono','Courier New',monospace;--font-head:'Syne',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:14px;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");}
+#root{min-height:100vh;display:flex;flex-direction:column;}
+::-webkit-scrollbar{width:3px;height:3px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border2);}
+input,select,textarea{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--font-body);font-size:13px;padding:9px 12px;width:100%;outline:none;transition:border-color .15s;border-radius:2px;}
+input:focus,select:focus{border-color:var(--amber);}input::placeholder{color:var(--muted);}select option{background:var(--surface);}
+label{display:block;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.btn{font-family:var(--font-body);font-size:12px;letter-spacing:.8px;padding:10px 18px;border:1px solid;cursor:pointer;transition:all .12s;display:inline-flex;align-items:center;gap:7px;border-radius:2px;font-weight:500;white-space:nowrap;}
+.btn-primary{background:var(--amber);border-color:var(--amber);color:#0f0e0d;font-weight:700;}.btn-primary:hover{background:#f59335;}.btn-primary:disabled{background:var(--amber-dim);border-color:var(--amber-dim);color:#5a3010;cursor:not-allowed;}
+.btn-ghost{background:transparent;border-color:var(--border2);color:var(--muted);}.btn-ghost:hover{border-color:var(--text);color:var(--text);}
+.btn-green{background:var(--green);border-color:var(--green);color:#fff;}.btn-green:hover{background:var(--green-lt);}
+.btn-blue{background:var(--blue);border-color:var(--blue);color:#fff;}.btn-blue:hover{background:#5a9bf0;}
+.btn-full{width:100%;justify-content:center;}
+.tag{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:3px 7px;border-radius:1px;font-weight:600;display:inline-block;}
+.tag-amber{background:#7a3f0d22;border:1px solid #7a3f0d99;color:var(--amber);}
+.tag-green{background:#4a7c5922;border:1px solid #4a7c5999;color:var(--green-lt);}
+.tag-blue{background:#3a7bd522;border:1px solid #3a7bd599;color:#6fa8f5;}
+.tag-muted{background:#2a272322;border:1px solid var(--border2);color:var(--muted);}
+.app-wrap{display:flex;height:100vh;overflow:hidden;}
+.sidebar{width:220px;min-width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
+.main-area{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+.topbar{height:48px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;background:var(--surface);flex-shrink:0;}
+.content{padding:24px;flex:1;}
+.sidebar-logo{padding:18px 16px 14px;border-bottom:1px solid var(--border);}
+.sidebar-logo h1{font-family:var(--font-head);font-size:16px;font-weight:800;color:var(--text);letter-spacing:-.5px;line-height:1.1;}
+.sidebar-logo .sub{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+.sidebar-section{padding:14px 16px 8px;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:12px;color:var(--muted);transition:all .12s;border-left:2px solid transparent;}
+.nav-item:hover{color:var(--text);background:rgba(232,130,42,.04);}
+.nav-item.active{color:var(--text);border-left-color:var(--amber);background:rgba(232,130,42,.06);}
+.nav-item .icon{font-size:13px;width:18px;text-align:center;}.nav-item .label{font-family:var(--font-body);font-weight:500;}
+.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid var(--border);}
+.user-chip{display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:2px;}
+.avatar{width:28px;height:28px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:var(--font-head);flex-shrink:0;}
+.user-info{flex:1;min-width:0;}.user-name{font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.user-role{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+.dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}.dot-green{background:var(--green-lt);box-shadow:0 0 5px var(--green-lt);}.dot-amber{background:var(--amber);}.dot-red{background:var(--red);}
+.topbar-stat{font-size:10px;color:var(--muted);padding:4px 10px;border:1px solid var(--border);border-radius:2px;}.topbar-stat span{color:var(--text);font-weight:500;margin-left:4px;}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:2px;overflow:hidden;}
+.panel-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.panel-title{font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--text);}
+.panel-body{padding:16px;}
+.data-row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);font-size:12px;}.data-row:last-child{border-bottom:none;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.grid-main{display:grid;grid-template-columns:1fr 380px;gap:20px;}
+@media(max-width:900px){.grid-main{grid-template-columns:1fr;}.grid-3{grid-template-columns:1fr 1fr;}}
+.stat-block{padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:2px;}
+.stat-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.stat-value{font-family:var(--font-head);font-size:26px;font-weight:800;line-height:1;}
+.stat-sub{font-size:10px;color:var(--muted);margin-top:4px;}
+.progress-wrap{height:3px;background:var(--border);border-radius:1px;margin-top:8px;overflow:hidden;}
+.progress-bar{height:100%;border-radius:1px;transition:width .6s ease;}
+.form-group{margin-bottom:14px;}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.tx-confirm{padding:10px 12px;background:#4a7c5911;border:1px solid #4a7c5966;border-radius:2px;margin-top:10px;}
+.tx-confirm-title{font-size:10px;color:var(--green-lt);font-weight:700;margin-bottom:4px;}
+.tx-hash{font-size:9px;color:var(--muted);word-break:break-all;}
+.mining-bar{height:2px;background:linear-gradient(90deg,transparent,var(--amber),transparent);background-size:200% 100%;animation:sweep 1.2s linear infinite;}
+@keyframes sweep{0%{background-position:-100% 0}100%{background-position:200% 0}}
+.empty{text-align:center;padding:32px 20px;color:var(--muted);font-size:11px;}.empty-icon{font-size:28px;margin-bottom:8px;opacity:.4;}
+.connect-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+  background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px),
+  repeating-linear-gradient(90deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px);background-size:40px 40px;}
+.connect-card{width:100%;max-width:460px;}
+.login-wordmark{font-family:var(--font-head);font-size:28px;font-weight:800;color:var(--text);letter-spacing:-1px;}
+.login-tagline{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:5px;}
+.login-panel{background:var(--surface);border:1px solid var(--border);padding:28px;border-radius:2px;margin-top:28px;}
+.login-title{font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:20px;color:var(--text);}
+.error-msg{font-size:11px;color:#e05a4e;padding:8px 12px;background:#c0392b11;border:1px solid #c0392b44;border-radius:2px;margin-bottom:12px;}
+.info-box{font-size:11px;color:var(--muted);padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:2px;margin-bottom:16px;line-height:1.8;}
+.info-box code{color:var(--green-lt);font-family:var(--font-body);}.info-box strong{color:var(--amber);}
+.step-row{display:flex;gap:10px;margin-bottom:6px;font-size:11px;color:var(--muted);}
+.step-num{color:var(--amber);font-weight:700;flex-shrink:0;width:16px;}
+.notif{position:fixed;bottom:20px;right:20px;background:var(--surface);border:1px solid var(--border);padding:12px 16px;border-radius:2px;font-size:12px;z-index:999;max-width:340px;animation:slideup .2s ease;border-left:3px solid var(--green-lt);}
+@keyframes slideup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.timeline-item{display:flex;gap:12px;margin-bottom:14px;}
+.timeline-dot-wrap{display:flex;flex-direction:column;align-items:center;}
+.tl-dot{width:8px;height:8px;border-radius:50%;border:1.5px solid;flex-shrink:0;margin-top:3px;}
+.tl-line{width:1px;flex:1;background:var(--border);margin-top:4px;min-height:20px;}
+.tl-content{flex:1;}.tl-loc{font-size:12px;font-weight:600;color:var(--text);}.tl-meta{font-size:10px;color:var(--muted);margin-top:2px;}.tl-tx{font-size:9px;color:var(--border2);margin-top:2px;}
+.flex-between{display:flex;align-items:center;justify-content:space-between;}
+.flex-center{display:flex;align-items:center;}.gap-8{gap:8px;}.w-full{width:100%;}
+.mt-4{margin-top:4px;}.mt-8{margin-top:8px;}.mt-12{margin-top:12px;}
+.text-xs{font-size:10px;}.text-muted{color:var(--muted);}.text-amber{color:var(--amber);}.fw-700{font-weight:700;}.mono{font-family:var(--font-body);}
+.demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;}
+.demo-btn{padding:10px 12px;background:var(--bg);border:1px solid var(--border);cursor:pointer;text-align:left;color:var(--muted);transition:all .12s;border-radius:2px;font-family:var(--font-body);}
+.demo-btn:hover{border-color:var(--amber);color:var(--text);}
+.demo-btn .role-name{font-size:11px;font-weight:600;display:block;margin-bottom:2px;}
+.demo-btn .role-email{font-size:9px;}
+
+/* fingerprint */
+.fp-circle{width:100px;height:100px;border-radius:50%;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:42px;cursor:pointer;transition:all .2s;background:var(--bg);margin:0 auto 16px;}
+.fp-circle:hover{border-color:var(--amber);}
+.fp-circle.scanning{border-color:var(--amber);animation:fpPulse 1s ease-in-out infinite;}
+.fp-circle.success{border-color:var(--green-lt);background:#4a7c5911;}
+.fp-circle.fail{border-color:var(--red);}
+@keyframes fpPulse{0%,100%{box-shadow:0 0 0 0 rgba(232,130,42,.4)}50%{box-shadow:0 0 0 12px rgba(232,130,42,0)}}
+.fp-msg{font-size:11px;text-align:center;min-height:18px;}
+.fp-msg.ok{color:var(--green-lt);}.fp-msg.err{color:var(--red);}.fp-msg.scan{color:var(--amber);}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+const { ethers } = window;
+
+// ─────────────────────────────────────────────────────
+// PASTE YOUR DEPLOYED CONTRACT ADDRESS HERE
+// ─────────────────────────────────────────────────────
+const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+
+const ABI = [
+  "function donate(string donorName, string disasterType, string description) payable",
+  "function createShipment(string ngoName, string description, string items, string recipientArea, string priority, address logisticsAgent) returns (uint256)",
+  "function recordScan(uint256 shipmentId, string agentName, string location, string gpsCoords, uint8 newStatus)",
+  "function getAllDonations() view returns (tuple(uint256 id, address donor, string donorName, uint256 amount, string disasterType, string description, address ngoWallet, uint256 timestamp, bool exists)[])",
+  "function getAllShipments() view returns (tuple(uint256 id, address ngo, string ngoName, string description, string items, string recipientArea, string priority, uint8 status, address logisticsAgent, uint256 createdAt, bool exists)[])",
+  "function getScansByShipment(uint256 shipmentId) view returns (uint256[])",
+  "function scans(uint256) view returns (uint256 id, uint256 shipmentId, address agent, string agentName, string location, string gpsCoords, uint8 status, uint256 timestamp)",
+  "function claimAid(uint256 shipmentId, string uid)",
+  "event DonationMade(uint256 indexed id, address indexed donor, uint256 amount, string disasterType, uint256 timestamp)",
+  "event ShipmentCreated(uint256 indexed id, address indexed ngo, string description, string recipientArea, uint256 timestamp)",
+  "event PackageScanned(uint256 indexed shipmentId, uint256 indexed scanId, address indexed agent, string location, uint8 status, uint256 timestamp)",
+  "event AidClaimed(uint256 indexed shipmentId, string uid, address indexed recipient, uint256 timestamp)"
+];
+
+const STATUS_NAMES=["Created","In Transit","At Warehouse","Customs Cleared","Out for Delivery","Delivered","Claimed"];
+const STATUS_TAG=["tag-muted","tag-amber","tag-amber","tag-blue","tag-blue","tag-green","tag-green"];
+const STATUS_COL=["#6b6560","#e8832a","#e8832a","#3a7bd5","#3a7bd5","#4a7c59","#4a7c59"];
+const STATUS_PROG=[8,55,35,60,82,100,100];
+const ROLE_AC={donor:"#e8832a",ngo:"#4a7c59",logistics:"#3a7bd5",recipient:"#9b6b9e"};
+
+const fmtAddr=a=>a?`${a.slice(0,6)}...${a.slice(-4)}`:"-";
+const fmtEth=wei=>parseFloat(ethers.formatEther(wei)).toFixed(4);
+const fmtTime=ts=>{try{return new Date(Number(ts)*1000).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false});}catch{return "-";}};
+
+function makeRpcProvider(){
+  return new ethers.JsonRpcProvider("http://127.0.0.1:8545",{chainId:31337,name:"hardhat"});
+}
+
+
+
+// ─────────────────────────────────────────────────────
+// WALLET ACCOUNT SELECTOR POPUP (donor role only)
+// ─────────────────────────────────────────────────────
+function AccountSelectorPopup({ rpcProvider, network, onSelect, onClose }) {
+  const [accounts, setAccounts]     = useState([]);
+  const [balances, setBalances]     = useState({});
+  const [sel, setSel]               = useState("");
+  const [loadAmt, setLoadAmt]       = useState("");
+  const [loadingAccs, setLoadingAccs] = useState(true);
+  const [connecting, setConnecting]   = useState(false);
+  const [err, setErr]               = useState("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const accs = await window.ethereum.request({ method: "eth_requestAccounts" });
+        setAccounts(accs);
+        const bals = {};
+        for (const a of accs) {
+          const b = await rpcProvider.getBalance(a);
+          bals[a] = parseFloat(ethers.formatEther(b)).toFixed(4);
+        }
+        setBalances(bals);
+      } catch(e) { setErr("Could not load accounts: " + e.message); }
+      setLoadingAccs(false);
+    })();
+  }, [rpcProvider]);
+
+  const confirm = async () => {
+    if (!sel) return;
+    setConnecting(true);
+    try {
+      const mm      = new ethers.BrowserProvider(window.ethereum, "any");
+      const signer  = await mm.getSigner();
+      let balance   = await rpcProvider.getBalance(sel);
+      // Simulate adding ETH for demo purposes
+      if (loadAmt && parseFloat(loadAmt) > 0) {
+        balance = balance + ethers.parseEther(loadAmt);
+      }
+      const read  = new ethers.Contract(CONTRACT_ADDRESS, ABI, rpcProvider);
+      const write = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+      onSelect({ address: sel, signer, rpcProvider, readContract: read, writeContract: write, balance, role: "donor", network });
+    } catch(e) { setErr(e.message); setConnecting(false); }
+  };
+
+  const overlay = { position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20 };
+
+  return (
+    <div style={overlay} onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
+      <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:2,width:"100%",maxWidth:480,maxHeight:"90vh",overflowY:"auto"}}>
+        {/* Header */}
+        <div style={{padding:"14px 18px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--bg)",position:"sticky",top:0}}>
+          <div>
+            <div style={{fontFamily:"var(--font-head)",fontSize:14,fontWeight:700}}>Select Donor Account</div>
+            <div style={{fontSize:10,color:"var(--muted)",marginTop:2}}>Hardhat Local · Chain ID 31337</div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div className="dot dot-green"/>
+            <span style={{fontSize:10,color:"var(--muted)"}}>Live</span>
+            <button onClick={onClose} style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:18,paddingLeft:8}}>✕</button>
+          </div>
+        </div>
+
+        <div style={{padding:18}}>
+          {err && <div className="error-msg" style={{marginBottom:12}}>{err}</div>}
+
+          {loadingAccs ? (
+            <div style={{textAlign:"center",padding:"24px 0",color:"var(--muted)",fontSize:12}}>
+              <div className="mining-bar" style={{marginBottom:12}}/>
+              Loading accounts from Hardhat node…
+            </div>
+          ) : accounts.length === 0 ? (
+            <div style={{padding:"12px",background:"#c0392b11",border:"1px solid #c0392b44",borderRadius:2,fontSize:11,color:"#e05a4e",lineHeight:1.7}}>
+              No accounts found. Make sure MetaMask is on Hardhat Local (31337) and has imported a test account private key from the hardhat node terminal.
+            </div>
+          ) : (
+            <>
+              <div style={{fontSize:10,color:"var(--muted)",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:10}}>Available Accounts</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:18}}>
+                {accounts.map((acc, i) => (
+                  <div key={acc}
+                    onClick={()=>setSel(acc)}
+                    style={{
+                      padding:"10px 14px",
+                      background:sel===acc?"rgba(232,130,42,0.08)":"var(--bg)",
+                      border:`1px solid ${sel===acc?"var(--amber)":"var(--border)"}`,
+                      borderRadius:2,cursor:"pointer",display:"flex",alignItems:"center",gap:12,transition:"all 0.1s"
+                    }}>
+                    <div style={{width:14,height:14,borderRadius:"50%",border:`2px solid ${sel===acc?"var(--amber)":"var(--border2)"}`,flexShrink:0,background:sel===acc?"var(--amber)":"transparent",transition:"all 0.1s"}}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:11,color:"var(--muted)",marginBottom:2}}>Account #{i}</div>
+                      <div style={{fontSize:10,color:"var(--text)",fontFamily:"var(--font-body)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{acc}</div>
+                    </div>
+                    <div style={{textAlign:"right",flexShrink:0}}>
+                      <div style={{fontSize:14,fontWeight:700,color:"var(--amber)",fontFamily:"var(--font-head)"}}>{balances[acc]||"…"}</div>
+                      <div style={{fontSize:9,color:"var(--muted)"}}>ETH</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Load ETH section */}
+              {sel && (
+                <div style={{padding:"12px 14px",background:"var(--bg)",border:"1px solid var(--border)",borderRadius:2,marginBottom:16}}>
+                  <div style={{fontSize:10,color:"var(--muted)",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:10}}>Load Test ETH (Simulated)</div>
+                  <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+                    <input
+                      type="number"
+                      value={loadAmt}
+                      onChange={e=>setLoadAmt(e.target.value)}
+                      placeholder="Enter amount to add"
+                      min="0" step="10"
+                      style={{flex:1,fontSize:16,fontWeight:700,color:"var(--amber)"}}
+                    />
+                    <span style={{fontSize:12,color:"var(--muted)",flexShrink:0}}>ETH</span>
+                  </div>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+                    {[10,50,100,500].map(amt=>(
+                      <button key={amt} className="btn btn-ghost" style={{padding:"4px 12px",fontSize:11}} onClick={()=>setLoadAmt(String(amt))}>+{amt}</button>
+                    ))}
+                  </div>
+                  <div style={{fontSize:10,color:"var(--muted)",lineHeight:1.6}}>
+                    Current: <strong style={{color:"var(--text)"}}>{balances[sel]||"0"} ETH</strong>
+                    {loadAmt && parseFloat(loadAmt)>0 && (
+                      <> → After load: <strong style={{color:"var(--green-lt)"}}>{(parseFloat(balances[sel]||0)+parseFloat(loadAmt)).toFixed(2)} ETH</strong></>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <button className="btn btn-primary btn-full" onClick={confirm} disabled={!sel||connecting}>
+                {connecting ? "Connecting…" : sel ? `Connect ${sel.slice(0,8)}…${sel.slice(-6)}` : "Select an account above"}
+              </button>
+            </>
+          )}
+          <button className="btn btn-ghost btn-full" style={{marginTop:8,fontSize:11}} onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────
+// CONNECT SCREEN
+// ─────────────────────────────────────────────────────
+function ConnectScreen({onConnected}){
+  const [loading,setLoad]          = useState(false);
+  const [err,setErr]               = useState("");
+  const [status,setStatus]         = useState("");
+  const [showAccPicker,setShowAcc] = useState(false);
+  const [pendingRpc,setPendingRpc] = useState(null);
+  const [pendingNet,setPendingNet] = useState(null);
+  const contractSet = CONTRACT_ADDRESS !== "PASTE_CONTRACT_ADDRESS_HERE";
+
+  const connect = async (selectedRole) => {
+    setErr(""); setLoad(true);
+    try {
+      if (!window.ethereum) throw new Error("MetaMask not detected. Install MetaMask first.");
+      if (!contractSet) throw new Error("Contract address not set — paste your deployed address at CONTRACT_ADDRESS in this file.");
+
+      // AUTO SWITCH NETWORK
+      setStatus("Switching to Hardhat network...");
+      try {
+        await window.ethereum.request({ method:"wallet_switchEthereumChain", params:[{chainId:"0x7a69"}] });
+      } catch(sw) {
+        setStatus("Adding Hardhat Local to MetaMask...");
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [{ chainId:"0x7a69", chainName:"Hardhat Local", rpcUrls:["http://127.0.0.1:8545"], nativeCurrency:{name:"ETH",symbol:"ETH",decimals:18} }]
+        });
+      }
+
+      setStatus("Connecting to node...");
+      const mm      = new ethers.BrowserProvider(window.ethereum, "any");
+      const network = await mm.getNetwork();
+      const chainId = Number(network.chainId);
+      if (chainId !== 31337 && chainId !== 11155111) throw new Error(`Wrong network (Chain ID: ${chainId}). Switch MetaMask to Hardhat Local (31337).`);
+      const rpc = makeRpcProvider();
+      setStatus("");
+      setLoad(false);
+
+      if (selectedRole === "donor") {
+        // Show account picker popup for donor
+        setPendingRpc(rpc);
+        setPendingNet(network);
+        setShowAcc(true);
+      } else {
+        // Other roles — connect directly
+        await mm.send("eth_requestAccounts", []);
+        const signer  = await mm.getSigner();
+        const address = await signer.getAddress();
+        const balance = await rpc.getBalance(address);
+        const read    = new ethers.Contract(CONTRACT_ADDRESS, ABI, rpc);
+        const write   = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+        onConnected({ address, signer, rpcProvider:rpc, readContract:read, writeContract:write, balance, role: selectedRole, network });
+      }
+    } catch(e) { setErr(e.message||"Connection failed"); setStatus(""); setLoad(false); }
+  };
+
+  return (
+    <div className="connect-wrap">
+      {showAccPicker && pendingRpc && (
+        <AccountSelectorPopup
+          rpcProvider={pendingRpc}
+          network={pendingNet}
+          onSelect={w=>{ setShowAcc(false); onConnected(w); }}
+          onClose={()=>setShowAcc(false)}
+        />
+      )}
+      <div className="connect-card">
+        <div className="login-wordmark">DisasterChain</div>
+        <div className="login-tagline">Hardhat · Solidity · Real Blockchain</div>
+        <div className="login-panel">
+          <div className="login-title">Connect Wallet</div>
+          <div className="info-box">
+            <strong>Before connecting:</strong><br/>
+            <div className="step-row"><span className="step-num">1</span><span>Terminal 1: <code>npx hardhat node</code> — keep running</span></div>
+            <div className="step-row"><span className="step-num">2</span><span>Terminal 2: <code>npm run deploy:local</code> — copy address</span></div>
+            <div className="step-row"><span className="step-num">3</span><span>Paste address at <code>CONTRACT_ADDRESS</code> in this file</span></div>
+            <div className="step-row"><span className="step-num">4</span><span>Serve: <code>npx serve . -p 3000</code> then open <code>localhost:3000</code></span></div>
+            <div className="step-row"><span className="step-num">5</span><span>Donor role shows account picker after connecting</span></div>
+          </div>
+          {!contractSet && <div className="error-msg">Contract address not set — open this file and replace PASTE_CONTRACT_ADDRESS_HERE with your deployed address</div>}
+          {err && <div className="error-msg">{err}</div>}
+          {status && <div style={{fontSize:11,color:'var(--amber)',marginBottom:10,padding:'6px 10px',background:'#7a3f0d11',border:'1px solid #7a3f0d44',borderRadius:2}}>{status}</div>}
+          <div className="demo-grid">
+            <button className="demo-btn" onClick={()=>connect("donor")} disabled={loading||!contractSet}>
+              <span className="role-name" style={{color:loading?"var(--muted)":"var(--amber)"}}>Donor Login</span>
+              <span className="role-email">Send ETH aid</span>
+            </button>
+            <button className="demo-btn" onClick={()=>connect("ngo")} disabled={loading||!contractSet}>
+              <span className="role-name" style={{color:loading?"var(--muted)":"var(--green-lt)"}}>NGO Login</span>
+              <span className="role-email">Create shipments</span>
+            </button>
+            <button className="demo-btn" onClick={()=>connect("logistics")} disabled={loading||!contractSet}>
+              <span className="role-name" style={{color:loading?"var(--muted)":"#6fa8f5"}}>Logistics Login</span>
+              <span className="role-email">Scan packages</span>
+            </button>
+            <button className="demo-btn" onClick={()=>connect("recipient")} disabled={loading||!contractSet}>
+              <span className="role-name" style={{color:loading?"var(--muted)":"#9b6b9e"}}>Recipient Login</span>
+              <span className="role-email">Claim delivered aid</span>
+            </button>
+          </div>
+          <div style={{marginTop:14,fontSize:10,color:'var(--muted)',lineHeight:1.8}}>
+            Contract: <span style={{color:contractSet?'var(--green-lt)':'var(--red)',fontFamily:'var(--font-body)'}}>{contractSet ? CONTRACT_ADDRESS : "not set"}</span><br/>
+            Network auto-switches to Hardhat Local (31337)
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────
+// EVENTS PANEL
+// ─────────────────────────────────────────────────────
+function EventsPanel({readContract}){
+  const [events,setEvents]=useState([]);
+  useEffect(()=>{
+    if(!readContract)return;
+    const push=msg=>setEvents(e=>[{msg,time:new Date().toLocaleTimeString()},...e.slice(0,19)]);
+    const d=(id,donor,amount,type)=>push(`Donation: ${fmtEth(amount)} ETH — ${type}`);
+    const s=(id,ngo,desc)=>push(`Shipment #${id}: ${desc.slice(0,28)}`);
+    const sc=(shipId,scanId,agent,loc)=>push(`Scan: ${loc} (SHIP-${shipId})`);
+    readContract.on("DonationMade",d);readContract.on("ShipmentCreated",s);readContract.on("PackageScanned",sc);
+    return()=>{readContract.off("DonationMade",d);readContract.off("ShipmentCreated",s);readContract.off("PackageScanned",sc);};
+  },[readContract]);
+  return(
+    <div className="panel">
+      <div className="panel-header"><span className="panel-title">Live Chain Events</span><div className="dot dot-green"/></div>
+      <div className="panel-body" style={{padding:'0 16px',maxHeight:220,overflowY:'auto'}}>
+        {events.length===0?<div className="empty" style={{padding:'20px 0'}}><div className="empty-icon">◎</div>Watching for events...</div>
+        :events.map((e,i)=>(
+          <div key={i} className="data-row" style={{padding:'8px 0'}}>
+            <div className="dot dot-amber" style={{marginTop:4,flexShrink:0}}/>
+            <div><div style={{fontSize:12}}>{e.msg}</div><div className="text-xs text-muted">{e.time}</div></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────
+// DONOR DASHBOARD
+// ─────────────────────────────────────────────────────
+function DonorDash({wallet,onTick}){
+  const{address,rpcProvider,readContract,writeContract}=wallet;
+  const[amount,setAmount]=useState("");const[desc,setDesc]=useState("");
+  const[name,setName]=useState("");const[disaster,setDisaster]=useState("Flood Relief");
+  const[mining,setMining]=useState(false);const[txHash,setTxHash]=useState("");
+  const[donations,setDons]=useState([]);const[balance,setBalance]=useState(wallet.balance);
+  const[notif,setNotif]=useState("");
+
+  const load=useCallback(async()=>{
+    try{const all=await readContract.getAllDonations();setDons(all.filter(d=>d.donor.toLowerCase()===address.toLowerCase()));const bal=await rpcProvider.getBalance(address);setBalance(bal);}
+    catch(e){console.error(e.message);}
+  },[readContract,rpcProvider,address]);
+  useEffect(()=>{load();},[load]);
+
+  const submit=async()=>{
+    const amt=parseFloat(amount);
+    if(!amount||isNaN(amt)||amt<=0||!name)return;
+    setMining(true);setTxHash("");
+    try{
+      const tx=await writeContract.donate(name,disaster,desc||"Disaster relief contribution",{value:ethers.parseEther(amount)});
+      setNotif("Submitted — waiting for block...");await tx.wait();setTxHash(tx.hash);
+      setAmount("");setDesc("");await load();setNotif(`${amount} ETH donated on-chain!`);onTick();
+    }catch(e){alert(e.reason||e.message||"Failed");}
+    setMining(false);
+  };
+
+  return(
+    <div>
+      {notif&&<div className="notif" onClick={()=>setNotif("")}>{notif}</div>}
+      <div className="grid-3" style={{marginBottom:20}}>
+        <div className="stat-block"><div className="stat-label">Wallet Balance</div><div className="stat-value" style={{color:'var(--amber)'}}>{fmtEth(balance)} ETH</div><div className="stat-sub mono">{fmtAddr(address)}</div></div>
+        <div className="stat-block"><div className="stat-label">My Donations</div><div className="stat-value">{donations.length}</div></div>
+        <div className="stat-block"><div className="stat-label">Total Donated</div><div className="stat-value">{donations.reduce((s,d)=>s+parseFloat(fmtEth(d.amount)),0).toFixed(3)} ETH</div></div>
+      </div>
+      <div className="grid-main">
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div className="panel">
+            {mining&&<div className="mining-bar"/>}
+            <div className="panel-header"><span className="panel-title">New Donation</span><span className="text-xs text-muted">real on-chain transaction</span></div>
+            <div className="panel-body">
+              <div className="form-row">
+                <div className="form-group"><label>Your Name</label><input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Arjun Mehta"/></div>
+                <div className="form-group"><label>Disaster Category</label>
+                  <select value={disaster} onChange={e=>setDisaster(e.target.value)}>
+                    {["Flood Relief","Earthquake Response","Cyclone Aid","Drought Support","Landslide Relief","Fire Disaster","Pandemic Relief","Tsunami Response"].map(d=><option key={d}>{d}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="form-group"><label>Amount (ETH)</label>
+                <input type="number" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0.00" min="0.01" step="0.01" style={{fontSize:18,fontWeight:700,color:'var(--amber)'}}/>
+              </div>
+              <div className="form-group"><label>Note (optional)</label><input value={desc} onChange={e=>setDesc(e.target.value)} placeholder="e.g. For families in Ernakulam district"/></div>
+              <button className="btn btn-primary btn-full" onClick={submit} disabled={mining||!name||!amount}>
+                {mining?"Mining transaction...":"Send Donation"}
+              </button>
+              {txHash&&<div className="tx-confirm"><div className="tx-confirm-title">Confirmed on chain</div><div className="tx-hash">{txHash}</div></div>}
+            </div>
+          </div>
+          <div className="panel">
+            <div className="panel-header"><span className="panel-title">My Donation History</span><button className="btn btn-ghost" style={{padding:'4px 10px',fontSize:10}} onClick={load}>Refresh</button></div>
+            <div className="panel-body" style={{padding:'0 16px'}}>
+              {donations.length===0?<div className="empty"><div className="empty-icon">◎</div>No donations yet</div>
+              :[...donations].reverse().map(d=>(
+                <div key={d.id.toString()} className="data-row">
+                  <div style={{paddingTop:3}}><div className="dot dot-green"/></div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div className="flex-between"><span style={{fontSize:13,fontWeight:600}}>{d.disasterType}</span><span className="text-amber fw-700" style={{fontSize:14}}>{fmtEth(d.amount)} ETH</span></div>
+                    {d.description&&<div className="text-xs text-muted mt-4">"{d.description}"</div>}
+                    <div style={{display:'flex',gap:8,marginTop:4}}><span className="text-xs text-muted">{fmtTime(d.timestamp)}</span><span className="text-xs text-muted">· {d.donorName}</span></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <EventsPanel readContract={readContract}/>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────
+// NGO DASHBOARD
+// ─────────────────────────────────────────────────────
+function NGODash({wallet,onTick}){
+  const{address,readContract,writeContract}=wallet;
+  const[desc,setDesc]=useState("");const[items,setItems]=useState("");const[area,setArea]=useState("");
+  const[ngoName,setNgoName]=useState("");const[priority,setPri]=useState("High");const[logAgent,setLog]=useState("");
+  const[loading,setLoad]=useState(false);const[donations,setDons]=useState([]);const[ships,setShips]=useState([]);
+  const[notif,setNotif]=useState("");
+
+  const load=useCallback(async()=>{
+    try{const[a,b]=await Promise.all([readContract.getAllDonations(),readContract.getAllShipments()]);
+      setDons(a);setShips(b.filter(s=>s.ngo.toLowerCase()===address.toLowerCase()));}
+    catch(e){console.error(e.message);}
+  },[readContract,address]);
+  useEffect(()=>{load();},[load]);
+
+  const create=async()=>{
+    if(!desc||!items||!ngoName)return;setLoad(true);
+    try{
+      const ag=logAgent&&ethers.isAddress(logAgent)?logAgent:address;
+      const tx=await writeContract.createShipment(ngoName,desc,items,area||"General Relief",priority,ag);
+      setNotif("Creating shipment...");await tx.wait();
+      setDesc("");setItems("");setArea("");setLog("");await load();setNotif("Shipment created on-chain!");onTick();
+    }catch(e){alert(e.reason||e.message||"Failed");}
+    setLoad(false);
+  };
+
+  const recipients=Object.entries(KYC_REGISTRY);
+  const totalEth=donations.reduce((s,d)=>s+parseFloat(fmtEth(d.amount)),0);
+
+  return(
+    <div>
+      {notif&&<div className="notif" onClick={()=>setNotif("")}>{notif}</div>}
+      <div className="grid-3" style={{marginBottom:20}}>
+        <div className="stat-block"><div className="stat-label">Total Aid Received</div><div className="stat-value" style={{color:'var(--green-lt)'}}>{totalEth.toFixed(3)} ETH</div></div>
+        <div className="stat-block"><div className="stat-label">My Shipments</div><div className="stat-value">{ships.length}</div></div>
+        <div className="stat-block"><div className="stat-label">Registered Recipients</div><div className="stat-value" style={{color:'#9b6b9e'}}>{recipients.length}</div></div>
+      </div>
+      <div className="grid-main">
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div className="panel">
+            {loading&&<div className="mining-bar"/>}
+            <div className="panel-header"><span className="panel-title">Create Shipment</span></div>
+            <div className="panel-body">
+              <div className="form-row">
+                <div className="form-group"><label>NGO Name</label><input value={ngoName} onChange={e=>setNgoName(e.target.value)} placeholder="e.g. Relief India"/></div>
+                <div className="form-group"><label>Priority</label>
+                  <select value={priority} onChange={e=>setPri(e.target.value)}>
+                    {["Critical","High","Medium","Low"].map(p=><option key={p}>{p}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="form-group"><label>Description</label><input value={desc} onChange={e=>setDesc(e.target.value)} placeholder="e.g. Kerala Flood Relief — Batch 02"/></div>
+              <div className="form-group"><label>Items</label><input value={items} onChange={e=>setItems(e.target.value)} placeholder="e.g. 50 food kits · 30 blankets"/></div>
+              <div className="form-row">
+                <div className="form-group"><label>Destination Area</label><input value={area} onChange={e=>setArea(e.target.value)} placeholder="e.g. Ernakulam District"/></div>
+                <div className="form-group"><label>Logistics Agent (optional)</label><input value={logAgent} onChange={e=>setLog(e.target.value)} placeholder="0x..."/></div>
+              </div>
+              <button className="btn btn-green btn-full" onClick={create} disabled={loading||!ngoName||!desc||!items}>
+                {loading?"Mining...":"Create Shipment"}
+              </button>
+            </div>
+          </div>
+          <div className="panel">
+            <div className="panel-header"><span className="panel-title">Incoming Donations</span><button className="btn btn-ghost" style={{padding:'4px 10px',fontSize:10}} onClick={load}>Refresh</button></div>
+            <div className="panel-body" style={{padding:'0 16px'}}>
+              {donations.length===0?<div className="empty"><div className="empty-icon">◎</div>No donations yet</div>
+              :donations.map(d=>(
+                <div key={d.id.toString()} className="data-row">
+                  <div style={{paddingTop:3}}><div className="dot dot-green"/></div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div className="flex-between"><span style={{fontSize:13,fontWeight:600}}>{d.donorName}</span><span className="text-amber fw-700" style={{fontSize:14}}>{fmtEth(d.amount)} ETH</span></div>
+                    <div className="text-xs text-muted mt-4">{d.disasterType} · {fmtTime(d.timestamp)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div className="panel">
+            <div className="panel-header"><span className="panel-title">Registered Recipients</span><span style={{fontSize:10,color:'var(--muted)'}}>{recipients.length} verified</span></div>
+            <div className="panel-body" style={{padding:'0 16px'}}>
+              {recipients.length===0?<div className="empty"><div className="empty-icon">◎</div>No recipients registered yet</div>
+              :recipients.map(([addr,r])=>(
+                <div key={addr} className="data-row">
+                  <div style={{paddingTop:3}}><div className="dot dot-green"/></div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div className="flex-between"><span style={{fontSize:13,fontWeight:600}}>{r.fullName||r.name}</span><span className="tag tag-green">KYC Verified</span></div>
+                    <div className="text-xs text-muted mt-4">📍 {r.address?`${r.address.district}, ${r.address.state}`:r.area}</div>
+                    <div className="text-xs text-muted mt-4">UID: <span style={{letterSpacing:2,fontWeight:600}}>{r.uid}</span></div>
+                    <div className="text-xs text-muted mono mt-4">{fmtAddr(addr)}</div>
+                    <div className="text-xs text-muted mt-4">{new Date(r.registeredAt).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false})}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <EventsPanel readContract={readContract}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────
+// LOGISTICS DASHBOARD
+// ─────────────────────────────────────────────────────
+function LogisticsDash({wallet,onTick}){
+  const{readContract,writeContract}=wallet;
+  const[ships,setShips]=useState([]);const[selShip,setSelShip]=useState("");
+  const[loc,setLoc]=useState("");const[gps,setGps]=useState("");
+  const[agentName,setAgent]=useState("");const[status,setStatus]=useState("1");
+  const[loading,setLoad]=useState(false);const[scans,setScans]=useState([]);const[notif,setNotif]=useState("");
+
+  const load=useCallback(async()=>{try{setShips(await readContract.getAllShipments());}catch(e){console.error(e.message);}},[readContract]);
+  useEffect(()=>{load();},[load]);
+
+  const loadScans=async(id)=>{
+    try{const ids=await readContract.getScansByShipment(id);const r=[];for(const i of ids){r.push(await readContract.scans(i));}setScans(r);}
+    catch(e){console.error(e.message);}
+  };
+
+  const scan=async()=>{
+    if(!selShip||!loc||!agentName)return;setLoad(true);
+    try{
+      const tx=await writeContract.recordScan(selShip,agentName,loc,gps||"GPS unavailable",parseInt(status));
+      setNotif("Scan submitted...");await tx.wait();setLoc("");setGps("");await load();await loadScans(selShip);setNotif("Scan recorded on-chain!");onTick();
+    }catch(e){alert(e.reason||e.message||"Failed");}
+    setLoad(false);
+  };
+
+  return(
+    <div>
+      {notif&&<div className="notif" onClick={()=>setNotif("")}>{notif}</div>}
+      <div className="grid-3" style={{marginBottom:20}}>
+        <div className="stat-block"><div className="stat-label">Total Shipments</div><div className="stat-value">{ships.length}</div></div>
+        <div className="stat-block"><div className="stat-label">In Transit</div><div className="stat-value" style={{color:'var(--amber)'}}>{ships.filter(s=>Number(s.status)===1||Number(s.status)===4).length}</div></div>
+        <div className="stat-block"><div className="stat-label">Delivered</div><div className="stat-value" style={{color:'var(--green-lt)'}}>{ships.filter(s=>Number(s.status)===5).length}</div></div>
+      </div>
+      <div className="grid-main">
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div className="panel">
+            {loading&&<div className="mining-bar"/>}
+            <div className="panel-header"><span className="panel-title">Record Package Scan</span></div>
+            <div className="panel-body">
+              <div className="form-group"><label>Your Name</label><input value={agentName} onChange={e=>setAgent(e.target.value)} placeholder="e.g. Ravi Kumar"/></div>
+              <div className="form-group"><label>Shipment</label>
+                <select value={selShip} onChange={e=>{setSelShip(e.target.value);if(e.target.value)loadScans(e.target.value);}}>
+                  <option value="">{ships.length===0?"No shipments yet":"— Select shipment —"}</option>
+                  {ships.map(s=><option key={s.id.toString()} value={s.id.toString()}>SHIP-{s.id.toString()} · {s.description.slice(0,30)}</option>)}
+                </select>
+              </div>
+              <div className="form-row">
+                <div className="form-group"><label>Location</label><input value={loc} onChange={e=>setLoc(e.target.value)} placeholder="e.g. Mumbai Hub"/></div>
+                <div className="form-group"><label>GPS</label><input value={gps} onChange={e=>setGps(e.target.value)} placeholder="19.07N 72.88E"/></div>
+              </div>
+              <div className="form-group"><label>Status</label>
+                <select value={status} onChange={e=>setStatus(e.target.value)}>
+                  <option value="1">In Transit</option><option value="2">At Warehouse</option>
+                  <option value="3">Customs Cleared</option><option value="4">Out for Delivery</option><option value="5">Delivered</option>
+                </select>
+              </div>
+              <button className="btn btn-primary btn-full" onClick={scan} disabled={loading||!selShip||!loc||!agentName}>
+                {loading?"Mining...":"Record Scan"}
+              </button>
+            </div>
+          </div>
+          <div className="panel">
+            <div className="panel-header"><span className="panel-title">All Shipments</span><button className="btn btn-ghost" style={{padding:'4px 10px',fontSize:10}} onClick={load}>Refresh</button></div>
+            <div className="panel-body" style={{padding:'0 16px'}}>
+              {ships.length===0?<div className="empty"><div className="empty-icon">◎</div>No shipments</div>
+              :ships.map(s=>(
+                <div key={s.id.toString()} className="data-row" style={{flexDirection:'column',gap:6,cursor:'pointer'}} onClick={()=>{setSelShip(s.id.toString());loadScans(s.id.toString());}}>
+                  <div className="flex-between w-full"><span className="mono text-xs text-muted">SHIP-{s.id.toString()}</span><span className={`tag ${STATUS_TAG[Number(s.status)]}`}>{STATUS_NAMES[Number(s.status)]}</span></div>
+                  <div style={{fontSize:13,fontWeight:600}}>{s.description}</div>
+                  <div className="text-xs text-muted">📍 {s.recipientArea}</div>
+                  <div className="progress-wrap"><div className="progress-bar" style={{width:`${STATUS_PROG[Number(s.status)]}%`,background:STATUS_COL[Number(s.status)]}}/></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div className="panel">
+            <div className="panel-header"><span className="panel-title">Scan History</span><span className="text-xs text-muted">{selShip?`SHIP-${selShip}`:"select a shipment"}</span></div>
+            <div className="panel-body" style={{padding:'0 16px',maxHeight:280,overflowY:'auto'}}>
+              {scans.length===0?<div className="empty" style={{padding:'20px 0'}}><div className="empty-icon">◎</div>No scans yet</div>
+              :scans.map((s,i)=>(
+                <div key={i} className="data-row">
+                  <div style={{paddingTop:3}}><div className="dot" style={{background:STATUS_COL[Number(s.status)]}}/></div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div className="flex-between"><span style={{fontSize:12,fontWeight:600}}>📍 {s.location}</span><span className={`tag ${STATUS_TAG[Number(s.status)]}`} style={{fontSize:9}}>{STATUS_NAMES[Number(s.status)]}</span></div>
+                    <div className="text-xs text-muted mt-4">{s.agentName} · {fmtTime(s.timestamp)}</div>
+                    <div className="text-xs text-muted mt-4">{s.gpsCoords}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <EventsPanel readContract={readContract}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ─────────────────────────────────────────────────────
+// KYC REGISTRY + HELPERS
+// ─────────────────────────────────────────────────────
+const KYC_REGISTRY = {}; // walletAddress -> record
+
+function generateUID() {
+  return Array.from({length:12},()=>Math.floor(Math.random()*10)).join('').replace(/(\d{4})(\d{4})(\d{4})/,'$1 $2 $3');
+}
+
+function FormGroup({label,children}){
+  return <div className="form-group"><label>{label}</label>{children}</div>;
+}
+
+const STATES=["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal"];
+
+// ─────────────────────────────────────────────────────
+// RECIPIENT — KYC REGISTRATION
+// ─────────────────────────────────────────────────────
+function RecipientRegister({address,readContract,onRegistered}){
+  const[step,setStep]=useState(1);
+
+  // Step 1 — Personal
+  const[fullName,setFullName]=useState("");
+  const[dob,setDob]=useState("");
+  const[gender,setGender]=useState("Female");
+  const[phone,setPhone]=useState("");
+  const[email,setEmail]=useState("");
+  const[fatherName,setFather]=useState("");
+
+  // Step 2 — Address
+  const[street,setStreet]=useState("");
+  const[village,setVillage]=useState("");
+  const[district,setDistrict]=useState("");
+  const[state,setState]=useState("Kerala");
+  const[pincode,setPincode]=useState("");
+
+  // Step 3 — Documents
+  const[aadhaarNum,setAadhaar]=useState("");
+  const[aadhaarFile,setAadhaarFile]=useState(null);
+  const[aadhaarPreview,setAadhaarPreview]=useState(null);
+  const[photoFile,setPhotoFile]=useState(null);
+  const[photoPreview,setPhotoPreview]=useState(null);
+  const[rationCard,setRation]=useState("");
+  const[bankAccount,setBank]=useState("");
+  const[ifsc,setIfsc]=useState("");
+  const[loading,setLoading]=useState(false);
+
+  const handleFile=(e,setFile,setPreview)=>{
+    const f=e.target.files[0]; if(!f)return;
+    setFile(f);
+    const r=new FileReader();
+    r.onload=ev=>setPreview(ev.target.result);
+    r.readAsDataURL(f);
+  };
+
+  const submit=async()=>{
+    setLoading(true);
+    await new Promise(r=>setTimeout(r,2000));
+    const uid=generateUID();
+    const record={
+      uid,fullName,dob,gender,phone,email,fatherName,
+      address:{street,village,district,state,pincode},
+      aadhaarNum:aadhaarNum.replace(/\s/g,'').replace(/(\d{4})(\d{4})(\d{4})/,'$1 $2 $3'),
+      rationCard,bankAccount,ifsc,
+      aadhaarPreview,photoPreview,
+      registeredAt:new Date().toISOString(),
+      status:"VERIFIED",
+      walletAddress:address,
+    };
+    KYC_REGISTRY[address]=record;
+    setLoading(false);
+    setStep(5);
+    onRegistered(record);
+  };
+
+  const stepLabels=["Personal Details","Address","Documents & Bank","Review","Done"];
+
+  const ProgressBar=()=>(
+    <div style={{marginBottom:24}}>
+      <div style={{display:'flex',gap:0,marginBottom:8}}>
+        {stepLabels.map((label,i)=>{
+          const n=i+1; const done=step>n; const active=step===n;
+          return(
+            <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
+              <div style={{width:'100%',display:'flex',alignItems:'center'}}>
+                {i>0&&<div style={{flex:1,height:1,background:done||active?'var(--amber)':'var(--border)'}}/>}
+                <div style={{width:22,height:22,borderRadius:'50%',flexShrink:0,background:done?'var(--green)':active?'var(--amber)':'var(--border)',color:done||active?'#fff':'var(--muted)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:700}}>
+                  {done?'✓':n}
+                </div>
+                {i<stepLabels.length-1&&<div style={{flex:1,height:1,background:done?'var(--amber)':'var(--border)'}}/>}
+              </div>
+              <div style={{fontSize:9,color:active?'var(--amber)':done?'var(--green-lt)':'var(--muted)',textAlign:'center',letterSpacing:'0.5px'}}>{label}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  // STEP 5 — DONE
+  if(step===5){
+    const rec=KYC_REGISTRY[address];
+    return(
+      <div style={{maxWidth:600,margin:'0 auto'}}>
+        <div style={{textAlign:'center',padding:'32px 20px',background:'var(--surface)',border:'1px solid var(--green)',borderRadius:2}}>
+          <div style={{fontSize:48,marginBottom:16}}>✓</div>
+          <div style={{fontFamily:'var(--font-head)',fontSize:20,fontWeight:800,color:'var(--green-lt)',marginBottom:8}}>KYC Verified Successfully</div>
+          <div style={{fontSize:11,color:'var(--muted)',marginBottom:20}}>Your identity has been verified and linked to the DisasterChain aid network</div>
+          <div style={{padding:'14px 16px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2,marginBottom:16,textAlign:'left'}}>
+            <div style={{fontSize:9,color:'var(--muted)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8}}>Your Unique ID (UID)</div>
+            <div style={{fontFamily:'var(--font-head)',fontSize:22,fontWeight:800,color:'var(--amber)',letterSpacing:4}}>{rec.uid}</div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,textAlign:'left',marginBottom:20}}>
+            {[['Name',rec.fullName],['District',rec.address.district],['Aadhaar',rec.aadhaarNum],['Status','Verified ✓']].map(([k,v])=>(
+              <div key={k} style={{padding:'8px 10px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2}}>
+                <div style={{fontSize:9,color:'var(--muted)',textTransform:'uppercase',letterSpacing:'1px',marginBottom:3}}>{k}</div>
+                <div style={{fontSize:12,fontWeight:600,color:k==='Status'?'var(--green-lt)':'var(--text)'}}>{v}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{fontSize:10,color:'var(--muted)',lineHeight:1.7,padding:'10px 12px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2,textAlign:'left'}}>
+            You can now receive aid packages assigned to your district. Switch to the Track Aid tab to see delivered packages and confirm receipt.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return(
+    <div>
+      <ProgressBar/>
+
+      {/* STEP 1 — PERSONAL */}
+      {step===1&&(
+        <div className="grid-main">
+          <div>
+            <div className="panel">
+              <div className="panel-header"><span className="panel-title">Personal Details</span><span className="text-xs text-muted">as per official ID</span></div>
+              <div className="panel-body">
+                <div className="form-row">
+                  <FormGroup label="Full Name (as per Aadhaar)"><input value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="e.g. Priya Sharma"/></FormGroup>
+                  <FormGroup label="Father's / Husband's Name"><input value={fatherName} onChange={e=>setFather(e.target.value)} placeholder="e.g. Ramesh Sharma"/></FormGroup>
+                </div>
+                <div className="form-row">
+                  <FormGroup label="Date of Birth"><input type="date" value={dob} onChange={e=>setDob(e.target.value)}/></FormGroup>
+                  <FormGroup label="Gender">
+                    <select value={gender} onChange={e=>setGender(e.target.value)}>
+                      <option>Female</option><option>Male</option><option>Transgender</option>
+                    </select>
+                  </FormGroup>
+                </div>
+                <div className="form-row">
+                  <FormGroup label="Mobile Number"><input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+91 98765 43210"/></FormGroup>
+                  <FormGroup label="Email Address"><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="priya@example.com"/></FormGroup>
+                </div>
+                <div style={{marginTop:4}}>
+                  <div className="text-xs text-muted mono" style={{marginBottom:8}}>Wallet: {fmtAddr(address)}</div>
+                </div>
+                <button className="btn btn-primary btn-full" onClick={()=>{if(!fullName||!dob||!phone){alert("Please fill all required fields.");return;}setStep(2);}}>
+                  Continue →
+                </button>
+              </div>
+            </div>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:16}}>
+            <div className="panel">
+              <div className="panel-header"><span className="panel-title">Why KYC?</span></div>
+              <div className="panel-body">
+                {[
+                  {icon:"🪪",t:"Prevent fraud",d:"Ensures only genuine disaster-affected individuals receive aid"},
+                  {icon:"🔗",t:"On-chain identity",d:"Your verified ID is cryptographically linked to the blockchain"},
+                  {icon:"🔒",t:"Data privacy",d:"Documents stored locally — never uploaded to any external server"},
+                  {icon:"💸",t:"Direct aid release",d:"NGOs release ETH directly to verified recipients on-chain"},
+                ].map(item=>(
+                  <div key={item.t} style={{display:'flex',gap:12,marginBottom:14}}>
+                    <div style={{fontSize:18,flexShrink:0}}>{item.icon}</div>
+                    <div>
+                      <div style={{fontSize:12,fontWeight:600,color:'var(--text)',marginBottom:2}}>{item.t}</div>
+                      <div className="text-xs text-muted" style={{lineHeight:1.6}}>{item.d}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 2 — ADDRESS */}
+      {step===2&&(
+        <div className="grid-main">
+          <div>
+            <div className="panel">
+              <div className="panel-header"><span className="panel-title">Residential Address</span><span className="text-xs text-muted">current address proof</span></div>
+              <div className="panel-body">
+                <FormGroup label="House No. / Street"><input value={street} onChange={e=>setStreet(e.target.value)} placeholder="e.g. 12/A, MG Road"/></FormGroup>
+                <div className="form-row">
+                  <FormGroup label="Village / Town / City"><input value={village} onChange={e=>setVillage(e.target.value)} placeholder="e.g. Aluva"/></FormGroup>
+                  <FormGroup label="District"><input value={district} onChange={e=>setDistrict(e.target.value)} placeholder="e.g. Ernakulam"/></FormGroup>
+                </div>
+                <div className="form-row">
+                  <FormGroup label="State">
+                    <select value={state} onChange={e=>setState(e.target.value)}>
+                      {STATES.map(s=><option key={s}>{s}</option>)}
+                    </select>
+                  </FormGroup>
+                  <FormGroup label="PIN Code"><input value={pincode} onChange={e=>setPincode(e.target.value)} placeholder="e.g. 683101" maxLength={6}/></FormGroup>
+                </div>
+                <div style={{display:'flex',gap:10}}>
+                  <button className="btn btn-ghost" onClick={()=>setStep(1)}>← Back</button>
+                  <button className="btn btn-primary btn-full" onClick={()=>{if(!village||!district||!pincode){alert("Please fill all address fields.");return;}setStep(3);}}>Continue →</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="panel">
+              <div className="panel-header"><span className="panel-title">Address Tips</span></div>
+              <div className="panel-body">
+                <div style={{fontSize:11,color:'var(--muted)',lineHeight:1.8}}>
+                  Enter the address exactly as it appears on your <strong style={{color:'var(--text)'}}>Aadhaar card</strong> or <strong style={{color:'var(--text)'}}>Ration Card</strong>.<br/><br/>
+                  The district you enter will be used to <strong style={{color:'var(--amber)'}}>match you with aid shipments</strong> going to your area.<br/><br/>
+                  Make sure your PIN code is correct — it is used for geographic verification.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 3 — DOCUMENTS */}
+      {step===3&&(
+        <div className="grid-main">
+          <div style={{display:'flex',flexDirection:'column',gap:16}}>
+            <div className="panel">
+              <div className="panel-header"><span className="panel-title">Identity Documents</span><span className="tag tag-amber">Required</span></div>
+              <div className="panel-body">
+                {/* Aadhaar */}
+                <div style={{padding:'14px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2,marginBottom:14}}>
+                  <div style={{fontSize:10,color:'var(--amber)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:10,fontWeight:700}}>Aadhaar Card</div>
+                  <FormGroup label="12-Digit Aadhaar Number">
+                    <input value={aadhaarNum} onChange={e=>setAadhaar(e.target.value.replace(/\D/g,'').slice(0,12))} placeholder="XXXX XXXX XXXX" maxLength={12} style={{letterSpacing:4,fontSize:16,fontWeight:700}}/>
+                  </FormGroup>
+                  <FormGroup label="Upload Aadhaar Card (front)">
+                    <input type="file" accept="image/*,application/pdf" onChange={e=>handleFile(e,setAadhaarFile,setAadhaarPreview)} style={{padding:'6px',cursor:'pointer'}}/>
+                  </FormGroup>
+                  {aadhaarPreview&&aadhaarPreview.startsWith('data:image')&&(
+                    <div style={{marginTop:8}}>
+                      <img src={aadhaarPreview} alt="Aadhaar" style={{width:'100%',maxHeight:120,objectFit:'cover',borderRadius:2,border:'1px solid var(--border)'}}/>
+                      <div style={{fontSize:9,color:'var(--green-lt)',marginTop:4}}>✓ Document uploaded</div>
+                    </div>
+                  )}
+                  {aadhaarFile&&!aadhaarPreview?.startsWith('data:image')&&<div style={{fontSize:9,color:'var(--green-lt)',marginTop:4}}>✓ PDF uploaded: {aadhaarFile.name}</div>}
+                </div>
+                {/* Photo */}
+                <div style={{padding:'14px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2}}>
+                  <div style={{fontSize:10,color:'var(--amber)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:10,fontWeight:700}}>Passport Photo</div>
+                  <FormGroup label="Upload recent passport-size photo">
+                    <input type="file" accept="image/*" onChange={e=>handleFile(e,setPhotoFile,setPhotoPreview)} style={{padding:'6px',cursor:'pointer'}}/>
+                  </FormGroup>
+                  {photoPreview&&(
+                    <div style={{marginTop:8,display:'flex',gap:12,alignItems:'center'}}>
+                      <img src={photoPreview} alt="Photo" style={{width:60,height:72,objectFit:'cover',borderRadius:2,border:'1px solid var(--border)'}}/>
+                      <div style={{fontSize:9,color:'var(--green-lt)'}}>✓ Photo uploaded</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div style={{display:'flex',gap:10}}>
+              <button className="btn btn-ghost" onClick={()=>setStep(2)}>← Back</button>
+              <button className="btn btn-primary btn-full" onClick={()=>{if(!aadhaarNum||aadhaarNum.length<12){alert("Please enter a valid 12-digit Aadhaar number.");return;}if(!aadhaarFile){alert("Please upload your Aadhaar card.");return;}setStep(4);}}>Continue →</button>
+            </div>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:16}}>
+            <div className="panel">
+              <div className="panel-header"><span className="panel-title">Bank / Ration Details</span><span className="tag tag-muted">Optional</span></div>
+              <div className="panel-body">
+                <FormGroup label="Ration Card Number"><input value={rationCard} onChange={e=>setRation(e.target.value)} placeholder="e.g. KL/ERN/123456"/></FormGroup>
+                <FormGroup label="Bank Account Number"><input value={bankAccount} onChange={e=>setBank(e.target.value)} placeholder="e.g. 1234567890"/></FormGroup>
+                <FormGroup label="IFSC Code"><input value={ifsc} onChange={e=>setIfsc(e.target.value.toUpperCase())} placeholder="e.g. SBIN0001234"/></FormGroup>
+                <div style={{fontSize:10,color:'var(--muted)',lineHeight:1.7,marginTop:8,padding:'8px 10px',background:'#4a7c5911',border:'1px solid #4a7c5966',borderRadius:2}}>
+                  Bank details allow NGOs to release ETH aid directly to your account through the smart contract.
+                </div>
+              </div>
+            </div>
+            <div className="panel">
+              <div className="panel-header"><span className="panel-title">Document Guidelines</span></div>
+              <div className="panel-body">
+                <div style={{fontSize:11,color:'var(--muted)',lineHeight:1.8}}>
+                  ✓ Upload clear, readable scans<br/>
+                  ✓ Accepted formats: JPG, PNG, PDF<br/>
+                  ✓ Max file size: 2MB<br/>
+                  ✓ All 4 corners of the document must be visible<br/><br/>
+                  <span style={{color:'var(--amber)'}}>Note:</span> Documents are stored locally in your browser only. Nothing is sent to any external server.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 4 — REVIEW */}
+      {step===4&&(
+        <div className="grid-main">
+          <div>
+            <div className="panel">
+              <div className="panel-header"><span className="panel-title">Review Your Application</span><span className="tag tag-amber">Final Step</span></div>
+              <div className="panel-body">
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:9,color:'var(--amber)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8,fontWeight:700}}>Personal</div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+                    {[['Full Name',fullName],['Father\'s Name',fatherName],['Date of Birth',dob],['Gender',gender],['Mobile',phone],['Email',email]].map(([k,v])=>(
+                      <div key={k} style={{padding:'7px 10px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2}}>
+                        <div style={{fontSize:9,color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.8px',marginBottom:2}}>{k}</div>
+                        <div style={{fontSize:11,fontWeight:600}}>{v||'—'}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:9,color:'var(--amber)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8,fontWeight:700}}>Address</div>
+                  <div style={{padding:'10px 12px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2,fontSize:12,lineHeight:1.8}}>
+                    {street}{street?', ':''}{village}, {district}, {state} — {pincode}
+                  </div>
+                </div>
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:9,color:'var(--amber)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8,fontWeight:700}}>Wallet Address</div>
+                  <div style={{padding:'10px 12px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2,fontSize:11,fontFamily:'var(--font-body)',wordBreak:'break-all',color:'var(--muted)'}}>{address}</div>
+                </div>
+                <div style={{marginBottom:20}}>
+                  <div style={{fontSize:9,color:'var(--amber)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8,fontWeight:700}}>Documents</div>
+                  <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>
+                    {aadhaarPreview&&aadhaarPreview.startsWith('data:image')&&(
+                      <div style={{textAlign:'center'}}>
+                        <img src={aadhaarPreview} alt="Aadhaar" style={{width:120,height:70,objectFit:'cover',borderRadius:2,border:'1px solid var(--border)'}}/>
+                        <div style={{fontSize:9,color:'var(--muted)',marginTop:3}}>Aadhaar Card</div>
+                      </div>
+                    )}
+                    {photoPreview&&(
+                      <div style={{textAlign:'center'}}>
+                        <img src={photoPreview} alt="Photo" style={{width:50,height:62,objectFit:'cover',borderRadius:2,border:'1px solid var(--border)'}}/>
+                        <div style={{fontSize:9,color:'var(--muted)',marginTop:3}}>Photo</div>
+                      </div>
+                    )}
+                    <div style={{padding:'8px 12px',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:2,fontSize:11}}>
+                      Aadhaar: <strong>{aadhaarNum.replace(/(\d{4})(\d{4})(\d{4})/,'$1 $2 $3')}</strong>
+                      {rationCard&&<><br/>Ration: <strong>{rationCard}</strong></>}
+                      {bankAccount&&<><br/>Bank: <strong>XXXX{bankAccount.slice(-4)}</strong></>}
+                    </div>
+                  </div>
+                </div>
+                <div style={{padding:'10px 12px',background:'#4a7c5911',border:'1px solid #4a7c5966',borderRadius:2,fontSize:10,color:'var(--muted)',lineHeight:1.7,marginBottom:16}}>
+                  By submitting, you confirm that the information provided is accurate and matches your official Aadhaar records. A unique 12-digit UID will be generated and linked to your wallet address on the DisasterChain network.
+                </div>
+                {loading&&<div className="mining-bar" style={{marginBottom:10}}/>}
+                <div style={{display:'flex',gap:10}}>
+                  <button className="btn btn-ghost" onClick={()=>setStep(3)} disabled={loading}>← Back</button>
+                  <button className="btn btn-green btn-full" onClick={submit} disabled={loading}>
+                    {loading?"Verifying identity…":"✓  Submit & Verify KYC"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="panel">
+              <div className="panel-header"><span className="panel-title">What Happens Next</span></div>
+              <div className="panel-body">
+                {[
+                  {n:"01",t:"UID Generated",d:"A unique 12-digit ID is created and cryptographically linked to your wallet."},
+                  {n:"02",t:"Area Matching",d:"Your district is matched against NGO shipment destinations."},
+                  {n:"03",t:"Aid Notification",d:"When a shipment reaches your area, you'll see it in the Track Aid tab."},
+                  {n:"04",t:"Claim Aid",d:"Confirm receipt of delivered packages — recorded permanently on-chain."},
+                ].map(item=>(
+                  <div key={item.n} style={{display:'flex',gap:12,marginBottom:14}}>
+                    <div style={{fontFamily:'var(--font-head)',fontWeight:800,fontSize:16,color:'var(--border2)',flexShrink:0,width:24}}>{item.n}</div>
+                    <div>
+                      <div style={{fontSize:12,fontWeight:600,color:'var(--text)',marginBottom:2}}>{item.t}</div>
+                      <div className="text-xs text-muted" style={{lineHeight:1.6}}>{item.d}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────
+// RECIPIENT — TRACK AID
+// ─────────────────────────────────────────────────────
+function RecipientTrack({address,readContract,myRecord}){
+  const[ships,setShips]=useState([]);const[dons,setDons]=useState([]);
+  const[scanMap,setScanMap]=useState({});const[loading,setLoad]=useState(false);
+  const[claiming,setClaiming]=useState(null);
+
+  const load=useCallback(async()=>{
+    setLoad(true);
+    try{
+      const[a,b]=await Promise.all([readContract.getAllShipments(),readContract.getAllDonations()]);
+      setShips(a);setDons(b);
+      const sm={};
+      for(const s of a){const ids=await readContract.getScansByShipment(s.id);const sc=[];for(const id of ids){sc.push(await readContract.scans(id));}sm[s.id.toString()]=sc;}
+      setScanMap(sm);
+    }catch(e){console.error(e.message);}
+    setLoad(false);
+  },[readContract]);
+  useEffect(()=>{load();},[load]);
+
+  const confirmReceipt=async(shipId)=>{
+    setClaiming(shipId);
+    try {
+      const tx = await readContract.runner.claimAid(shipId, myRecord.uid);
+      alert(`Confirming receipt on-chain... Please wait.`);
+      await tx.wait();
+      alert(`✓ Receipt Confirmed on-chain!\n\nUID: ${myRecord.uid}\nName: ${myRecord.fullName}\nPackage: SHIP-${shipId}\nWallet: ${address}\n\nThis confirmation has been recorded on the DisasterChain blockchain.`);
+      load();
+    } catch (e) {
+      alert(e.reason || e.message || "Failed to claim aid");
+    }
+    setClaiming(null);
+  };
+
+  const totalEth=dons.reduce((s,d)=>s+parseFloat(fmtEth(d.amount)),0);
+
+  return(
+    <div>
+      {myRecord&&(
+        <div style={{padding:'12px 16px',background:'#4a7c5911',border:'1px solid #4a7c5966',borderRadius:2,marginBottom:20,display:'flex',alignItems:'center',gap:14}}>
+          {myRecord.photoPreview&&<img src={myRecord.photoPreview} alt="photo" style={{width:40,height:48,objectFit:'cover',borderRadius:2,border:'1px solid var(--border)',flexShrink:0}}/>}
+          <div style={{flex:1}}>
+            <div style={{fontSize:12,fontWeight:700,color:'var(--green-lt)'}}>{myRecord.fullName}</div>
+            <div className="text-xs text-muted mt-4">UID: <span style={{fontWeight:600,color:'var(--text)',letterSpacing:2}}>{myRecord.uid}</span></div>
+            <div className="text-xs text-muted mt-4">📍 {myRecord.address.district}, {myRecord.address.state} — {myRecord.address.pincode}</div>
+            <div className="text-xs text-muted mono mt-4">{fmtAddr(address)}</div>
+          </div>
+          <span className="tag tag-green">KYC Verified</span>
+        </div>
+      )}
+
+      <div className="grid-3" style={{marginBottom:20}}>
+        <div className="stat-block"><div className="stat-label">Aid Packages</div><div className="stat-value">{ships.length}</div></div>
+        <div className="stat-block"><div className="stat-label">Delivered</div><div className="stat-value" style={{color:'var(--green-lt)'}}>{ships.filter(s=>Number(s.status)===5).length}</div></div>
+        <div className="stat-block"><div className="stat-label">Total Aid Raised</div><div className="stat-value" style={{color:'var(--amber)'}}>{totalEth.toFixed(3)} ETH</div></div>
+      </div>
+
+      <div className="grid-main">
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div className="panel">
+            <div className="panel-header"><span className="panel-title">Package Tracker</span><button className="btn btn-ghost" style={{padding:'4px 10px',fontSize:10}} onClick={load} disabled={loading}>{loading?"Loading...":"Refresh"}</button></div>
+            <div className="panel-body">
+              {ships.length===0?<div className="empty"><div className="empty-icon">◎</div>No packages yet</div>
+              :ships.map(s=>{
+                const scans=scanMap[s.id.toString()]||[];
+                const delivered=Number(s.status)===5;
+                const areaMatch=myRecord&&s.recipientArea.toLowerCase().includes(myRecord.address.district.toLowerCase());
+                return(
+                  <div key={s.id.toString()} style={{marginBottom:20,paddingBottom:20,borderBottom:'1px solid var(--border)'}}>
+                    <div className="flex-between" style={{marginBottom:8}}>
+                      <div><div style={{fontSize:13,fontWeight:700}}>{s.description}</div><div className="text-xs text-muted mt-4">{s.items}</div></div>
+                      <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
+                        <span className={`tag ${STATUS_TAG[Number(s.status)]}`}>{STATUS_NAMES[Number(s.status)]}</span>
+                        {areaMatch&&<span className="tag tag-green" style={{fontSize:9}}>Your Area</span>}
+                      </div>
+                    </div>
+                    <div style={{display:'flex',gap:8,marginBottom:8}}>
+                      <span className="mono text-xs text-muted">SHIP-{s.id.toString()}</span>
+                      <span className="text-xs text-muted">·</span>
+                      <span className="text-xs text-muted">📍 {s.recipientArea}</span>
+                    </div>
+                    <div className="progress-wrap" style={{marginBottom:12}}><div className="progress-bar" style={{width:`${STATUS_PROG[Number(s.status)]}%`,background:STATUS_COL[Number(s.status)]}}/></div>
+
+                    {delivered&&myRecord&&(
+                      <div style={{padding:'10px 12px',background:'#3a7bd511',border:'1px solid #3a7bd566',borderRadius:2,marginBottom:12,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
+                        <div>
+                          <div style={{fontSize:11,fontWeight:600,color:'#6fa8f5'}}>Aid Available to Claim</div>
+                          <div className="text-xs text-muted mt-4">UID {myRecord.uid} · {myRecord.fullName}</div>
+                        </div>
+                        <button className="btn btn-blue" style={{fontSize:11,padding:'7px 14px'}} onClick={()=>confirmReceipt(s.id.toString())} disabled={claiming===s.id.toString()}>
+                          {claiming===s.id.toString()?"Confirming...":"Confirm Receipt"}
+                        </button>
+                      </div>
+                    )}
+                    {delivered&&!myRecord&&(
+                      <div style={{padding:'8px 12px',background:'#7a3f0d11',border:'1px solid #7a3f0d44',borderRadius:2,marginBottom:12,fontSize:11,color:'var(--amber)'}}>
+                        Complete KYC registration to claim this aid package
+                      </div>
+                    )}
+
+                    {scans.length>0?(
+                      <div>
+                        <div style={{fontSize:10,color:'var(--muted)',letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:10}}>Verified Checkpoints</div>
+                        {scans.map((sc,i)=>(
+                          <div key={i} className="timeline-item">
+                            <div className="timeline-dot-wrap">
+                              <div className="tl-dot" style={{borderColor:STATUS_COL[Number(sc.status)],background:i===scans.length-1?STATUS_COL[Number(sc.status)]:'transparent'}}/>
+                              {i<scans.length-1&&<div className="tl-line"/>}
+                            </div>
+                            <div className="tl-content">
+                              <div className="tl-loc">📍 {sc.location}</div>
+                              <div className="tl-meta">{fmtTime(sc.timestamp)} · {STATUS_NAMES[Number(sc.status)]}</div>
+                              <div className="tl-meta">{sc.gpsCoords}</div>
+                              <div className="tl-tx">agent: {fmtAddr(sc.agent)}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ):<div className="text-xs text-muted" style={{fontStyle:'italic'}}>Awaiting first logistics checkpoint...</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div className="panel">
+            <div className="panel-header"><span className="panel-title">All Donors</span></div>
+            <div className="panel-body" style={{padding:'0 16px'}}>
+              {dons.length===0?<div className="empty"><div className="empty-icon">◎</div>No donations yet</div>
+              :dons.map(d=>(
+                <div key={d.id.toString()} className="data-row">
+                  <div style={{paddingTop:3}}><div className="dot dot-green"/></div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div className="flex-between"><span style={{fontSize:13,fontWeight:600}}>{d.donorName}</span><span className="text-amber fw-700" style={{fontSize:14}}>{fmtEth(d.amount)} ETH</span></div>
+                    <div className="text-xs text-muted mt-4">{d.disasterType} · {fmtTime(d.timestamp)}</div>
+                    <div className="text-xs text-muted mono mt-4">{fmtAddr(d.donor)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <EventsPanel readContract={readContract}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────
+// RECIPIENT DASHBOARD (wrapper)
+// ─────────────────────────────────────────────────────
+function RecipientDash({wallet}){
+  const{address,readContract}=wallet;
+  const[myRecord,setMyRecord]=useState(()=>KYC_REGISTRY[address]||null);
+  const[subPage,setSubPage]=useState(()=>KYC_REGISTRY[address]?"track":"register");
+
+  const onRegistered=rec=>{setMyRecord(rec);setSubPage("track");};
+
+  return(
+    <div>
+      <div style={{display:'flex',gap:8,marginBottom:20}}>
+        <button className={`btn ${subPage==='register'?'btn-primary':'btn-ghost'}`} style={{padding:'7px 16px',fontSize:11}} onClick={()=>setSubPage('register')}>
+          🪪 KYC Registration
+        </button>
+        <button className={`btn ${subPage==='track'?'btn-primary':'btn-ghost'}`} style={{padding:'7px 16px',fontSize:11}} onClick={()=>setSubPage('track')}>
+          📦 Track Aid
+        </button>
+        {myRecord&&(
+          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:8,fontSize:11,color:'var(--green-lt)'}}>
+            <div className="dot dot-green"/> KYC Verified · {myRecord.uid}
+          </div>
+        )}
+      </div>
+      {subPage==='register'
+        ? <RecipientRegister address={address} readContract={readContract} onRegistered={onRegistered}/>
+        : <RecipientTrack address={address} readContract={readContract} myRecord={myRecord}/>
+      }
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────
+// PUBLIC LEDGER
+// ─────────────────────────────────────────────────────
+function PublicLedger({wallet}){
+  const{readContract}=wallet;
+  const[dons,setDons]=useState([]);
+  const[ships,setShips]=useState([]);
+  const[scans,setScans]=useState({});
+  const[blocks,setBlocks]=useState([]);
+  const[loading,setLoad]=useState(false);
+  const[selectedBlock,setSelectedBlock]=useState(null);
+
+  const load=useCallback(async()=>{
+    setLoad(true);
+    try{
+      const[a,b]=await Promise.all([readContract.getAllDonations(),readContract.getAllShipments()]);
+      setDons(a);setShips(b);
+      const sm={};
+      for(const s of b){const ids=await readContract.getScansByShipment(s.id);const sc=[];for(const id of ids){sc.push(await readContract.scans(id));}sm[s.id.toString()]=sc;}
+      setScans(sm);
+
+      // Fetch Latest Blocks
+      const currentBlockNumber = await wallet.rpcProvider.getBlockNumber();
+      const latestBlocks = [];
+      const blocksToFetch = Math.min(10, currentBlockNumber + 1); // Get up to 10 latest blocks
+      for(let i = 0; i < blocksToFetch; i++) {
+        const blk = await wallet.rpcProvider.getBlock(currentBlockNumber - i);
+        if(blk) latestBlocks.push(blk);
+      }
+      setBlocks(latestBlocks);
+    }catch(e){console.error(e.message);}
+    setLoad(false);
+  },[readContract, wallet.rpcProvider]);
+  useEffect(()=>{load();},[load]);
+
+  const totalEth=dons.reduce((s,d)=>s+parseFloat(fmtEth(d.amount)),0);
+
+  return(
+    <div>
+      <div className="grid-3" style={{marginBottom:20}}>
+        <div className="stat-block"><div className="stat-label">Total Volume</div><div className="stat-value" style={{color:'var(--amber)'}}>{totalEth.toFixed(3)} ETH</div></div>
+        <div className="stat-block"><div className="stat-label">Total Donations</div><div className="stat-value">{dons.length}</div></div>
+        <div className="stat-block"><div className="stat-label">Current Block</div><div className="stat-value">{blocks.length>0?blocks[0].number:'...'}</div></div>
+      </div>
+      <div className="grid-main">
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div className="panel">
+            <div className="panel-header"><span className="panel-title">Raw Blockchain Explorer</span><button className="btn btn-ghost" style={{padding:'4px 10px',fontSize:10}} onClick={load} disabled={loading}>Refresh</button></div>
+            <div className="panel-body" style={{padding:'0 16px'}}>
+              {blocks.length===0?<div className="empty"><div className="empty-icon">◎</div>No blocks found</div>
+              :blocks.map(b=>(
+                <div key={b.number} className="data-row" style={{flexDirection:'column',gap:8,cursor:'pointer',transition:'background 0.2s'}} onClick={()=>setSelectedBlock(b)} onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                  <div className="flex-between w-full">
+                    <span className="mono" style={{fontSize:13,color:'var(--amber)',fontWeight:700}}>Block #{b.number}</span>
+                    <span className="tag tag-muted">{b.transactions.length} TXs</span>
+                  </div>
+                  <div className="text-xs text-muted mono">Hash: {fmtAddr(b.hash)}...{b.hash.slice(-6)}</div>
+                  <div className="text-xs text-muted mono">Parent: {fmtAddr(b.parentHash)}...{b.parentHash.slice(-6)}</div>
+                  <div className="text-xs text-muted">Mined: {new Date(b.timestamp*1000).toLocaleString('en-IN')}</div>
+                </div>
+              ))}
+            </div>
+            {selectedBlock && (
+              <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={(e)=>{if(e.target===e.currentTarget)setSelectedBlock(null)}}>
+                <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:2,width:"100%",maxWidth:540,maxHeight:"90vh",overflowY:"auto"}}>
+                  <div style={{padding:"14px 18px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--bg)",position:"sticky",top:0}}>
+                    <div>
+                      <div style={{fontFamily:"var(--font-head)",fontSize:16,fontWeight:700,color:"var(--amber)"}}>Block #{selectedBlock.number}</div>
+                      <div style={{fontSize:10,color:"var(--muted)",marginTop:2}}>Hardhat Local Network</div>
+                    </div>
+                    <button onClick={()=>setSelectedBlock(null)} style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:18}}>✕</button>
+                  </div>
+                  <div style={{padding:20,display:'flex',flexDirection:'column',gap:14}}>
+                    <div className="stat-block" style={{background:'var(--bg)',padding:12}}><div className="stat-label">Block Hash</div><div className="stat-value mono" style={{fontSize:11,wordBreak:'break-all',color:'var(--text)'}}>{selectedBlock.hash}</div></div>
+                    <div className="stat-block" style={{background:'var(--bg)',padding:12}}><div className="stat-label">Parent Hash</div><div className="stat-value mono" style={{fontSize:11,wordBreak:'break-all',color:'var(--text)'}}>{selectedBlock.parentHash}</div></div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                      <div className="stat-block" style={{background:'var(--bg)',padding:12}}><div className="stat-label">Timestamp</div><div className="stat-value" style={{fontSize:13}}>{new Date(selectedBlock.timestamp*1000).toLocaleString('en-IN')}</div></div>
+                      <div className="stat-block" style={{background:'var(--bg)',padding:12}}><div className="stat-label">Transactions</div><div className="stat-value" style={{fontSize:13}}>{selectedBlock.transactions.length}</div></div>
+                      <div className="stat-block" style={{background:'var(--bg)',padding:12}}><div className="stat-label">Nonce</div><div className="stat-value mono" style={{fontSize:13}}>{selectedBlock.nonce}</div></div>
+                      <div className="stat-block" style={{background:'var(--bg)',padding:12}}><div className="stat-label">Miner</div><div className="stat-value mono" style={{fontSize:11,wordBreak:'break-all'}}>{selectedBlock.miner}</div></div>
+                      <div className="stat-block" style={{background:'var(--bg)',padding:12}}><div className="stat-label">Gas Used / Limit</div><div className="stat-value mono" style={{fontSize:13}}>{selectedBlock.gasUsed?.toString()} / {selectedBlock.gasLimit?.toString()}</div></div>
+                      <div className="stat-block" style={{background:'var(--bg)',padding:12}}><div className="stat-label">Base Fee (Gwei)</div><div className="stat-value mono" style={{fontSize:13}}>{selectedBlock.baseFeePerGas ? ethers.formatUnits(selectedBlock.baseFeePerGas, 'gwei') : 'N/A'}</div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div className="panel">
+            <div className="panel-header"><span className="panel-title">Global Shipments Ledger</span></div>
+            <div className="panel-body">
+              {ships.length===0?<div className="empty"><div className="empty-icon">◎</div>No shipments recorded</div>
+              :[...ships].reverse().map(s=>(
+                <div key={s.id.toString()} style={{marginBottom:20,paddingBottom:20,borderBottom:'1px solid var(--border)'}}>
+                  <div className="flex-between" style={{marginBottom:8}}>
+                    <div><div style={{fontSize:13,fontWeight:700}}>{s.description}</div><div className="text-xs text-muted mt-4">By: {s.ngoName} ({fmtAddr(s.ngo)})</div></div>
+                    <span className={`tag ${STATUS_TAG[Number(s.status)]}`}>{STATUS_NAMES[Number(s.status)]}</span>
+                  </div>
+                  <div style={{display:'flex',gap:8,marginBottom:8}}>
+                    <span className="mono text-xs text-muted">SHIP-{s.id.toString()}</span><span className="text-xs text-muted">·</span><span className="text-xs text-muted">📍 {s.recipientArea}</span>
+                  </div>
+                  <div className="progress-wrap" style={{marginBottom:12}}><div className="progress-bar" style={{width:`${STATUS_PROG[Number(s.status)]}%`,background:STATUS_COL[Number(s.status)]}}/></div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="panel">
+            <div className="panel-header"><span className="panel-title">Global Donations Ledger</span></div>
+          <div className="panel-body" style={{padding:'0 16px'}}>
+            {dons.length===0?<div className="empty"><div className="empty-icon">◎</div>No donations recorded</div>
+            :[...dons].reverse().map(d=>(
+              <div key={d.id.toString()} className="data-row">
+                <div style={{paddingTop:3}}><div className="dot dot-amber"/></div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div className="flex-between"><span style={{fontSize:13,fontWeight:600}}>{d.disasterType}</span><span className="text-amber fw-700" style={{fontSize:14}}>{fmtEth(d.amount)} ETH</span></div>
+                  <div className="text-xs text-muted mt-4">{d.donorName} ({fmtAddr(d.donor)})</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ─────────────────────────────────────────────────────
+// APP SHELL
+// ─────────────────────────────────────────────────────
+const NAV={
+  donor:    [{id:"donate",    icon:"◈",label:"Donate"},{id:"ledger",icon:"🗃️",label:"Public Ledger"}],
+  ngo:      [{id:"shipments", icon:"▣",label:"Shipments"},{id:"ledger",icon:"🗃️",label:"Public Ledger"}],
+  logistics:[{id:"scan",      icon:"◉",label:"Scan"},{id:"ledger",icon:"🗃️",label:"Public Ledger"}],
+  recipient:[{id:"recipient", icon:"🔐",label:"My Aid Portal"},{id:"ledger",icon:"🗃️",label:"Public Ledger"}],
+};
+const PAGE_TITLE={donate:"Donations",shipments:"Shipment Management",scan:"Package Scanning",recipient:"Aid Recipient Portal",ledger:"Public Blockchain Ledger"};
+
+function App(){
+  const[wallet,setWallet]=useState(null);
+  const[page,setPage]=useState(null);
+  const[tick,setTick]=useState(0);
+  const refresh=useCallback(()=>setTick(t=>t+1),[]);
+
+  if(!wallet)return <ConnectScreen onConnected={w=>{setWallet(w);setPage(NAV[w.role][0].id);}}/>;
+
+  const{role,address,network,balance}=wallet;
+  const ac=ROLE_AC[role];
+
+  const renderPage=()=>{
+    if(page==="ledger")    return <PublicLedger  wallet={wallet}/>;
+    if(role==="donor")     return <DonorDash     wallet={wallet} onTick={refresh}/>;
+    if(role==="ngo")       return <NGODash       wallet={wallet} onTick={refresh}/>;
+    if(role==="logistics") return <LogisticsDash wallet={wallet} onTick={refresh}/>;
+    if(role==="recipient") return <RecipientDash wallet={wallet}/>;
+  };
+
+  return(
+    <div className="app-wrap">
+      <aside className="sidebar">
+        <div className="sidebar-logo"><h1>Disaster<br/>Chain</h1><div className="sub">Hardhat · Solidity</div></div>
+        <div className="sidebar-section">Navigation</div>
+        {NAV[role].map(n=>(
+          <div key={n.id} className={`nav-item ${page===n.id?"active":""}`} onClick={()=>setPage(n.id)}>
+            <span className="icon">{n.icon}</span><span className="label">{n.label}</span>
+          </div>
+        ))}
+        <div style={{flex:1}}/>
+        <div className="sidebar-section">Network</div>
+        <div style={{padding:'0 16px 8px'}}>
+          <div className="flex-center gap-8" style={{marginBottom:4}}><div className="dot dot-green"/><span className="text-xs text-muted">{network.name}</span></div>
+          <div className="text-xs text-muted">Chain ID: {Number(network.chainId)}</div>
+          <div className="text-xs text-muted mono" style={{marginTop:4,wordBreak:'break-all'}}>
+            {CONTRACT_ADDRESS!=="PASTE_CONTRACT_ADDRESS_HERE"?fmtAddr(CONTRACT_ADDRESS):<span style={{color:'var(--red)'}}>not set</span>}
+          </div>
+        </div>
+        <div className="sidebar-footer">
+          <div className="user-chip">
+            <div className="avatar" style={{background:`${ac}22`,border:`1px solid ${ac}55`,color:ac}}>{address.slice(2,4).toUpperCase()}</div>
+            <div className="user-info"><div className="user-name mono">{fmtAddr(address)}</div><div className="user-role">{role}</div></div>
+          </div>
+          <button className="btn btn-ghost btn-full" style={{marginTop:8,fontSize:11}} onClick={()=>setWallet(null)}>Disconnect</button>
+        </div>
+      </aside>
+      <div className="main-area">
+        <div className="topbar">
+          <span style={{fontFamily:'var(--font-head)',fontWeight:700,fontSize:14,color:'var(--text)'}}>{PAGE_TITLE[page]||"Dashboard"}</span>
+          <div style={{flex:1}}/>
+          <div className="topbar-stat">Wallet <span className="mono" style={{fontSize:10}}>{fmtAddr(address)}</span></div>
+          {role==="donor"&&<div className="topbar-stat">Balance <span>{fmtEth(balance)} ETH</span></div>}
+          <div style={{display:'flex',alignItems:'center',gap:6,fontSize:10,color:'var(--muted)'}}><div className="dot dot-green"/><span>Live</span></div>
+        </div>
+        <div className="content">{renderPage()}</div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
