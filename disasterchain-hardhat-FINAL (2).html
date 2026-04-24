@@ -89,6 +89,7 @@ label{display:block;font-size:10px;letter-spacing:1.2px;text-transform:uppercase
 .step-num{color:var(--amber);font-weight:700;flex-shrink:0;width:16px;}
 .notif{position:fixed;bottom:20px;right:20px;background:var(--surface);border:1px solid var(--border);padding:12px 16px;border-radius:2px;font-size:12px;z-index:999;max-width:340px;animation:slideup .2s ease;border-left:3px solid var(--green-lt);}
 @keyframes slideup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .timeline-item{display:flex;gap:12px;margin-bottom:14px;}
 .timeline-dot-wrap{display:flex;flex-direction:column;align-items:center;}
 .tl-dot{width:8px;height:8px;border-radius:50%;border:1.5px solid;flex-shrink:0;margin-top:3px;}
@@ -1131,10 +1132,144 @@ function RecipientRegister({address,readContract,onRegistered}){
 // ─────────────────────────────────────────────────────
 // RECIPIENT — TRACK AID
 // ─────────────────────────────────────────────────────
-function RecipientTrack({address,readContract,myRecord}){
+// ─────────────────────────────────────────────────────
+// UID VERIFICATION MODAL
+// ─────────────────────────────────────────────────────
+function UIDVerifyModal({shipment, myRecord, onVerified, onClose}){
+  const[uid,setUid]=useState("");
+  const[err,setErr]=useState("");
+  const[verifying,setVerifying]=useState(false);
+  const[verified,setVerified]=useState(false);
+
+  const normalizeUid=v=>v.replace(/\s/g,"");
+
+  const handleInput=e=>{
+    const raw=e.target.value.replace(/[^0-9]/g,"").slice(0,12);
+    const spaced=raw.replace(/(\d{4})(\d{1,4})?(\d{1,4})?/,(_,a,b,c)=>[a,b,c].filter(Boolean).join(" "));
+    setUid(spaced);
+    setErr("");
+  };
+
+  const verify=async()=>{
+    const entered=normalizeUid(uid);
+    const expected=normalizeUid(myRecord.uid);
+    if(entered.length<12){setErr("Please enter your full 12-digit UID.");return;}
+    setVerifying(true);
+    await new Promise(r=>setTimeout(r,900)); // brief "checking" animation
+    if(entered!==expected){
+      setErr("❌ UID does not match your KYC record. Please check and try again.");
+      setVerifying(false);
+      return;
+    }
+    setVerified(true);
+    setVerifying(false);
+    setTimeout(()=>onVerified(),700);
+  };
+
+  const overlayStyle={position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(4px)"};
+
+  return(
+    <div style={overlayStyle} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:2,width:"100%",maxWidth:420,overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,0.6)"}}>
+
+        {/* Header */}
+        <div style={{padding:"14px 18px",borderBottom:"1px solid var(--border)",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div>
+            <div style={{fontFamily:"var(--font-head)",fontSize:14,fontWeight:700,color:"var(--text)"}}>🔐 Verify Your Identity</div>
+            <div style={{fontSize:10,color:"var(--muted)",marginTop:2}}>Enter your KYC UID to confirm receipt</div>
+          </div>
+          <button onClick={onClose} style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:18}}>✕</button>
+        </div>
+
+        <div style={{padding:20}}>
+          {/* Shipment info */}
+          <div style={{padding:"10px 12px",background:"#3a7bd511",border:"1px solid #3a7bd544",borderRadius:2,marginBottom:18,display:"flex",alignItems:"center",gap:12}}>
+            <div style={{fontSize:18,flexShrink:0}}>📦</div>
+            <div>
+              <div style={{fontSize:12,fontWeight:600,color:"#6fa8f5"}}>{shipment.description}</div>
+              <div style={{fontSize:10,color:"var(--muted)",marginTop:2}}>SHIP-{shipment.id.toString()} · {shipment.recipientArea}</div>
+            </div>
+          </div>
+
+          {/* UID input */}
+          <div style={{marginBottom:16}}>
+            <label style={{display:"block",fontSize:10,letterSpacing:"1.2px",textTransform:"uppercase",color:"var(--muted)",marginBottom:8}}>Your 12-Digit KYC UID</label>
+            <input
+              value={uid}
+              onChange={handleInput}
+              placeholder="XXXX XXXX XXXX"
+              maxLength={14}
+              style={{
+                fontSize:20,fontWeight:700,letterSpacing:4,textAlign:"center",
+                color:verified?"var(--green-lt)":err?"#e05a4e":"var(--amber)",
+                border:`1px solid ${verified?"var(--green)":err?"#c0392b":"var(--border)"}`,
+                transition:"border-color 0.2s, color 0.2s",
+                padding:"14px",
+              }}
+              disabled={verifying||verified}
+              autoFocus
+            />
+            <div style={{fontSize:10,color:"var(--muted)",marginTop:6,textAlign:"center"}}>
+              Digits only · must match your registered KYC identity
+            </div>
+          </div>
+
+          {/* Name hint from KYC */}
+          <div style={{padding:"8px 12px",background:"#4a7c5911",border:"1px solid #4a7c5933",borderRadius:2,marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
+            {myRecord.photoPreview&&<img src={myRecord.photoPreview} alt="photo" style={{width:28,height:34,objectFit:"cover",borderRadius:2,border:"1px solid var(--border)",flexShrink:0}}/>}
+            <div>
+              <div style={{fontSize:11,fontWeight:600,color:"var(--green-lt)"}}>{myRecord.fullName}</div>
+              <div style={{fontSize:9,color:"var(--muted)",marginTop:2}}>📍 {myRecord.address.district}, {myRecord.address.state}</div>
+            </div>
+            <span className="tag tag-green" style={{marginLeft:"auto"}}>KYC ✓</span>
+          </div>
+
+          {/* Error */}
+          {err&&<div style={{fontSize:11,color:"#e05a4e",padding:"8px 12px",background:"#c0392b11",border:"1px solid #c0392b44",borderRadius:2,marginBottom:12,lineHeight:1.6}}>{err}</div>}
+
+          {/* Success flash */}
+          {verified&&(
+            <div style={{fontSize:12,color:"var(--green-lt)",padding:"10px 12px",background:"#4a7c5922",border:"1px solid #4a7c5999",borderRadius:2,marginBottom:12,textAlign:"center",fontWeight:600}}>
+              ✓ Identity Verified — Submitting to blockchain…
+              <div className="mining-bar" style={{marginTop:8}}/>
+            </div>
+          )}
+
+          {/* Actions */}
+          {!verified&&(
+            <div style={{display:"flex",gap:10}}>
+              <button className="btn btn-ghost" style={{flex:1}} onClick={onClose} disabled={verifying}>Cancel</button>
+              <button
+                className="btn btn-blue"
+                style={{flex:2,justifyContent:"center",fontSize:12}}
+                onClick={verify}
+                disabled={verifying||normalizeUid(uid).length<12}
+              >
+                {verifying?(
+                  <span style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{width:10,height:10,border:"1.5px solid rgba(255,255,255,0.3)",borderTop:"1.5px solid #fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>
+                    Verifying…
+                  </span>
+                ):"Verify & Confirm Receipt"}
+              </button>
+            </div>
+          )}
+
+          <div style={{fontSize:9,color:"var(--border2)",marginTop:12,textAlign:"center",lineHeight:1.7}}>
+            Your UID is verified locally before any blockchain transaction is made.<br/>
+            Nothing is sent unless the UID matches your registered identity.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RecipientTrack({address,readContract,writeContract,myRecord}){
   const[ships,setShips]=useState([]);const[dons,setDons]=useState([]);
   const[scanMap,setScanMap]=useState({});const[loading,setLoad]=useState(false);
   const[claiming,setClaiming]=useState(null);
+  const[uidModal,setUidModal]=useState(null); // shipment object or null
 
   const load=useCallback(async()=>{
     setLoad(true);
@@ -1149,16 +1284,20 @@ function RecipientTrack({address,readContract,myRecord}){
   },[readContract]);
   useEffect(()=>{load();},[load]);
 
-  const confirmReceipt=async(shipId)=>{
+  const confirmReceipt=async(shipment)=>{
+    setUidModal(shipment);
+  };
+
+  const executeClaimAid=async(shipId)=>{
+    setUidModal(null);
     setClaiming(shipId);
     try {
-      const tx = await readContract.runner.claimAid(shipId, myRecord.uid);
-      alert(`Confirming receipt on-chain... Please wait.`);
+      const tx = await writeContract.claimAid(BigInt(shipId), myRecord.uid);
       await tx.wait();
-      alert(`✓ Receipt Confirmed on-chain!\n\nUID: ${myRecord.uid}\nName: ${myRecord.fullName}\nPackage: SHIP-${shipId}\nWallet: ${address}\n\nThis confirmation has been recorded on the DisasterChain blockchain.`);
+      alert(`✓ Receipt Confirmed on-chain!\n\nUID: ${myRecord.uid}\nName: ${myRecord.fullName}\nPackage: SHIP-${shipId}\nWallet: ${address}\n\nThis confirmation has been permanently recorded on the DisasterChain blockchain.`);
       load();
     } catch (e) {
-      alert(e.reason || e.message || "Failed to claim aid");
+      alert(e.reason || e.shortMessage || e.message || "Failed to claim aid");
     }
     setClaiming(null);
   };
@@ -1167,6 +1306,14 @@ function RecipientTrack({address,readContract,myRecord}){
 
   return(
     <div>
+      {uidModal&&myRecord&&(
+        <UIDVerifyModal
+          shipment={uidModal}
+          myRecord={myRecord}
+          onVerified={()=>executeClaimAid(uidModal.id.toString())}
+          onClose={()=>setUidModal(null)}
+        />
+      )}
       {myRecord&&(
         <div style={{padding:'12px 16px',background:'#4a7c5911',border:'1px solid #4a7c5966',borderRadius:2,marginBottom:20,display:'flex',alignItems:'center',gap:14}}>
           {myRecord.photoPreview&&<img src={myRecord.photoPreview} alt="photo" style={{width:40,height:48,objectFit:'cover',borderRadius:2,border:'1px solid var(--border)',flexShrink:0}}/>}
@@ -1218,7 +1365,7 @@ function RecipientTrack({address,readContract,myRecord}){
                           <div style={{fontSize:11,fontWeight:600,color:'#6fa8f5'}}>Aid Available to Claim</div>
                           <div className="text-xs text-muted mt-4">UID {myRecord.uid} · {myRecord.fullName}</div>
                         </div>
-                        <button className="btn btn-blue" style={{fontSize:11,padding:'7px 14px'}} onClick={()=>confirmReceipt(s.id.toString())} disabled={claiming===s.id.toString()}>
+                        <button className="btn btn-blue" style={{fontSize:11,padding:'7px 14px'}} onClick={()=>confirmReceipt(s)} disabled={claiming===s.id.toString()}>
                           {claiming===s.id.toString()?"Confirming...":"Confirm Receipt"}
                         </button>
                       </div>
@@ -1282,7 +1429,7 @@ function RecipientTrack({address,readContract,myRecord}){
 // RECIPIENT DASHBOARD (wrapper)
 // ─────────────────────────────────────────────────────
 function RecipientDash({wallet}){
-  const{address,readContract}=wallet;
+  const{address,readContract,writeContract}=wallet;
   const[myRecord,setMyRecord]=useState(()=>KYC_REGISTRY[address]||null);
   const[subPage,setSubPage]=useState(()=>KYC_REGISTRY[address]?"track":"register");
 
@@ -1305,7 +1452,7 @@ function RecipientDash({wallet}){
       </div>
       {subPage==='register'
         ? <RecipientRegister address={address} readContract={readContract} onRegistered={onRegistered}/>
-        : <RecipientTrack address={address} readContract={readContract} myRecord={myRecord}/>
+        : <RecipientTrack address={address} readContract={readContract} writeContract={writeContract} myRecord={myRecord}/>
       }
     </div>
   );
